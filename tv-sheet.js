@@ -1,6 +1,6 @@
 // Содержимое файла adblock_script.js
 (function() {
-    alert('tvMod =] v0.1'); // Немного изменим для теста
+    alert('Patch Activated v0.1\n@xrsrvd'); // Немного изменим для теста
 
     let lastFoundAd = null;
 
