@@ -1,6 +1,6 @@
 // Содержимое файла adblock_script.js
 (function() {
-    alert('Детектор активирован =] v0.1'); // Немного изменим для теста
+    alert('adDetector =] v0.1'); // Немного изменим для теста
 
     let lastFoundAd = null;
 
