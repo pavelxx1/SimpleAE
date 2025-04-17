@@ -1,6 +1,6 @@
 // Содержимое файла adblock_script.js
 (function() {
-    //alert('Детектор рекламы активирован (из Assets) =)'); // Немного изменим для теста
+    alert('Детектор рекламы активирован (из Assets) =)'); // Немного изменим для теста
 
     let lastFoundAd = null;
 
@@ -30,8 +30,8 @@
         });
     }
 
-    setInterval(scanForAds, 2000);
-    //setTimeout(scanForAds, 2000);
+    setInterval(scanForAds, 1000);
+    //setTimeout(scanForAds, 1000);
 /*
     function hideBanners() {
         const possibleAds = [
