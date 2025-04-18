@@ -1,20 +1,12 @@
-// Сохраняем HTML в localStorage
 localStorage.setItem('pageHTML', document.documentElement.outerHTML);
-
-// Создаем кнопку для скачивания
-const htmlContent = localStorage.getItem('pageHTML');
-const blob = new Blob([htmlContent], {type: 'text/html'});
-const a = document.createElement('a');
-a.href = URL.createObjectURL(blob);
-a.download = 'page.html';
-a.innerText = 'Скачать HTML';
-a.style.display = 'block';
-a.style.margin = '20px';
-a.style.padding = '10px';
-a.style.backgroundColor = '#4CAF50';
-a.style.color = 'white';
-a.style.textAlign = 'center';
-a.style.textDecoration = 'none';
-a.style.fontSize = '16px';
-a.style.borderRadius = '5px';
-document.body.prepend(a);
+// Добавить кнопку для извлечения
+let btn = document.createElement('button');
+btn.innerText = 'Показать HTML из localStorage';
+btn.onclick = () => {
+  let textarea = document.createElement('textarea');
+  textarea.value = localStorage.getItem('pageHTML');
+  textarea.style.width = '100%';
+  textarea.style.height = '80vh';
+  document.body.prepend(textarea);
+};
+document.body.prepend(btn);
