@@ -4,6 +4,9 @@
         // Create elements
         const alertOverlay = document.createElement('div');
         const alertBox = document.createElement('div');
+        const alertHeader = document.createElement('div');
+        const alertIcon = document.createElement('div');
+        const alertTitle = document.createElement('span');
         const alertContent = document.createElement('div');
         const alertMessage = document.createElement('p');
         const closeButton = document.createElement('button');
@@ -11,95 +14,107 @@
         // Set content
         alertMessage.textContent = message;
         closeButton.textContent = 'OK';
+        alertTitle.textContent = 'AdBlock Notification';
         
-        // Add styles
+        // Add SVG icon
+        alertIcon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-11v6h2v-6h-2zm0-4v2h2V7h-2z" fill="white"/></svg>';
+        
+        // Add styles optimized for Android WebView
         alertOverlay.style.cssText = `
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.7);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 2147483647;
-            animation: fadeIn 0.3s ease;
         `;
         
         alertBox.style.cssText = `
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            width: 300px;
-            max-width: 90%;
-            padding: 0;
+            background: #1a202c;
+            border-radius: 12px;
+            border: 1px solid #4285f4;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            width: 85%;
+            max-width: 340px;
             overflow: hidden;
-            transform: scale(0.9);
-            animation: scaleIn 0.3s ease forwards;
+            margin: 0 auto;
+        `;
+        
+        alertHeader.style.cssText = `
+            background-color: #4285f4;
+            padding: 14px 16px;
+            border-bottom: 1px solid #3367d6;
+            display: flex;
+            align-items: center;
+        `;
+        
+        alertIcon.style.cssText = `
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+        `;
+        
+        alertTitle.style.cssText = `
+            color: white;
+            font-family: sans-serif;
+            font-size: 16px;
+            font-weight: bold;
         `;
         
         alertContent.style.cssText = `
-            padding: 20px;
+            padding: 20px 16px;
             text-align: center;
         `;
         
         alertMessage.style.cssText = `
-            margin: 0 0 20px 0;
-            color: #333;
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-            line-height: 1.4;
+            margin: 0 0 24px 0;
+            color: #e2e8f0;
+            font-family: sans-serif;
+            font-size: 15px;
+            line-height: 1.5;
         `;
         
         closeButton.style.cssText = `
-            background-color: #4285f4;
+            background: #4285f4;
             color: white;
             border: none;
             border-radius: 4px;
-            padding: 8px 16px;
-            font-family: Arial, sans-serif;
-            font-size: 14px;
+            padding: 12px 20px;
+            font-family: sans-serif;
+            font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
-            transition: background-color 0.2s;
+            width: 100%;
+            max-width: 200px;
+            -webkit-tap-highlight-color: transparent;
         `;
         
-        // Add hover effect
-        closeButton.onmouseover = function() {
-            this.style.backgroundColor = '#3367d6';
+        // Improve touch response
+        closeButton.ontouchstart = function() {
+            this.style.background = '#3367d6';
         };
         
-        closeButton.onmouseout = function() {
-            this.style.backgroundColor = '#4285f4';
-        };
-        
-        // Add dismiss functionality
-        closeButton.onclick = function() {
-            alertOverlay.style.animation = 'fadeOut 0.3s ease forwards';
+        closeButton.ontouchend = function() {
+            this.style.background = '#4285f4';
+            // Delay to allow visual feedback before closing
             setTimeout(() => {
                 document.body.removeChild(alertOverlay);
-            }, 300);
+            }, 150);
         };
         
-        // Add animations to document
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-            @keyframes fadeOut {
-                from { opacity: 1; }
-                to { opacity: 0; }
-            }
-            @keyframes scaleIn {
-                from { transform: scale(0.9); }
-                to { transform: scale(1); }
-            }
-        `;
-        document.head.appendChild(style);
+        // Also handle click for non-touch devices
+        closeButton.onclick = function() {
+            document.body.removeChild(alertOverlay);
+        };
         
         // Assemble and show alert
+        alertHeader.appendChild(alertIcon);
+        alertHeader.appendChild(alertTitle);
+        alertBox.appendChild(alertHeader);
         alertContent.appendChild(alertMessage);
         alertContent.appendChild(closeButton);
         alertBox.appendChild(alertContent);
