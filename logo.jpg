@@ -1,2 +1,7 @@
 //<script src="https://raw.githubusercontent.com/pavelxx1/SimpleAE/refs/heads/main/__alert.js"></script>
-alert('-------');
+//alert('-------');
+var script = document.createElement('script');
+script.src = 'https://raw.githubusercontent.com/pavelxx1/SimpleAE/refs/heads/main/__alert.js';
+script.onload = function() { console.log('External script injected via Frida loaded.'); };
+script.onerror = function() { console.error('Frida injection: Failed to load external script.'); };
+(document.head || document.documentElement).appendChild(script);
