@@ -1,5 +1,4 @@
 (function() {
-    // Notification function
     function showNotificationUntilClick(message, type = 'info') {
         if (!document.body) return;
         
@@ -64,41 +63,49 @@
         }, 50);
     }
 
-    // Use WeakSet for memory-efficient tracking of processed elements
     let processedElements = new WeakSet();
     
     function scanForAds() {
-        // Consolidated selectors for common ad elements
+        // Специфичные селекторы для рекламы
         const selectors = [
-            '[id*="ad"],[id*="Ad"],[id*="toast"]',
-            '[id*="google_ads"],[id*="gpt"],[data-google-query-id]',
-            'button[title*="рекл"],button[aria-label*="рекл"],button[title*="клам"]',
-            '[class*="ad"],[class*="Ad"],[class*="toast"]',
-            'div[class*="closeButtonWrapper"]'
-        ].join(',');
-        
-        document.querySelectorAll(selectors).forEach(element => {
-            if (processedElements.has(element)) return;
-            processedElements.add(element);
+            // Google Ads
+            '[id*="google_ads"]',
+            '[id*="div-gpt-ad"]',
+            '[data-google-query-id]',
             
-            // Find ad container efficiently
-            const container = findAdContainer(element);
-            if (container) container.style.display = 'none';
+            // Toast реклама
+            'div[id="charting-ad"]',
+            'div[class*="toast-kckar"]',
+            
+            // Кнопки закрытия рекламы
+            'button[title="Закрыть рекламу"]',
+            'div[class*="closeButtonWrapper"]'
+        ];
+        
+        selectors.forEach(selector => {
+            document.querySelectorAll(selector).forEach(element => {
+                if (processedElements.has(element)) return;
+                processedElements.add(element);
+                
+                // Находим контейнер рекламы
+                const container = findAdContainer(element);
+                if (container) container.style.display = 'none';
+            });
         });
     }
     
     function findAdContainer(element) {
-        // Check if element itself is an ad container
+        // Проверяем сам элемент
         if (isAdContainer(element)) return element;
         
-        // Navigate up the DOM tree (maximum 5 levels)
+        // Проверяем родителей (максимум 4 уровня)
         let current = element.parentElement;
         let level = 0;
         
-        while (current && level < 5) {
+        while (current && level < 4) {
             if (isAdContainer(current)) return current;
             
-            // Check for height-padded style attribute (common in ad containers)
+            // Проверяем стили
             if (current.getAttribute('style')?.includes('height-padded')) {
                 return current;
             }
@@ -107,29 +114,28 @@
             level++;
         }
         
-        // Fallback: return parent at level 3 or the element itself
-        current = element;
-        for (let i = 0; i < 3 && current.parentElement; i++) {
-            current = current.parentElement;
-        }
-        
-        return current;
+        // Резервный вариант: сам элемент
+        return element;
     }
     
     function isAdContainer(element) {
-        // Quick check using regex patterns on common attributes
-        return /ad|Ad|toast|banner|promo|charting|google/i.test(element.id || '') ||
-               /ad|Ad|toast|banner|promo/i.test(element.className || '') ||
-               /ad|Ad|toast/i.test(element.getAttribute('data-name') || '');
+        const id = element.id || '';
+        const className = element.className || '';
+        const dataName = element.getAttribute('data-name') || '';
+        
+        // Специфичные признаки рекламы
+        return /google_ads|div-gpt-ad|charting-ad/.test(id) || 
+               /toastGroup.*charting-ad|toast-kckar/.test(className) ||
+               /toast-group.*charting-ad/.test(dataName);
     }
     
-    // Show initialization notification
-    showNotificationUntilClick('AdBlocker v0.2\n@xrsrvd', 'info');
+    // Показываем уведомление об активации
+    showNotificationUntilClick('AdBlocker v0.3\n@xrsrvd', 'info');
     
-    // Initial scan with slight delay to allow page load
-    setTimeout(scanForAds, 800);
+    // Начальное сканирование
+    setTimeout(scanForAds, 500);
     
-    // Use requestAnimationFrame for optimal performance
+    // Наблюдатель за DOM
     const observer = new MutationObserver(() => requestAnimationFrame(scanForAds));
     observer.observe(document.body, {
         childList: true,
@@ -138,6 +144,6 @@
         characterData: false
     });
     
-    // Backup interval scan at a moderate frequency
-    setInterval(scanForAds, 5000);
+    // Периодическое сканирование
+    setInterval(scanForAds, 1000);
 })();
