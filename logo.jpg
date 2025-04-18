@@ -2,96 +2,106 @@
 
 (function() {
 
-    // --- Функция показа уведомления с кнопкой закрытия (из предыдущего примера) ---
     /**
-     * Показывает уведомление, требующее явного закрытия кнопкой.
-     * @param {string} message
-     * @param {string} type
+     * Функция для показа уведомления, которое остается видимым до первого
+     * клика/тапа пользователя в любом месте страницы.
+     * @param {string} message - Текст сообщения.
+     * @param {string} type - Тип уведомления ('success', 'info', 'warning', 'error').
      */
-    function showNotificationWithButton(message, type = 'info') {
-        if (!document.body) { return; }
+    function showNotificationUntilClick(message, type = 'success') {
+        if (!document.body) {
+            console.warn('[AdBlock Patch] document.body не найден, уведомление не показано.');
+            return;
+        }
 
+        // --- Создание основного элемента ---
         const notification = document.createElement('div');
         notification.textContent = message.replace(/\\n/g, '\n');
 
-        const baseStyles = { /* ... все стили как в варианте с кнопкой ... */
-            position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
-            minWidth: '180px', maxWidth: '90%', padding: '12px 40px 12px 20px', /* место для кнопки */
-            color: 'white', borderRadius: '25px', boxShadow: '0 3px 8px rgba(0, 0, 0, 0.25)',
-            zIndex: '10001', fontFamily: 'Roboto, Arial, sans-serif', fontSize: '14px',
-            lineHeight: '1.4', textAlign: 'center', whiteSpace: 'pre-wrap', opacity: '0',
-            transition: 'opacity 0.4s ease-in-out, bottom 0.4s ease-in-out'
-            /* НЕ используем pointerEvents: 'none' */
+        // --- Стили (убираем pointer-events: none, т.к. клик может быть и на нем) ---
+        const baseStyles = {
+            position: 'fixed',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            minWidth: '180px',
+            maxWidth: '90%',
+            padding: '12px 20px', // Обычный padding, кнопка не нужна
+            color: 'white',
+            borderRadius: '25px',
+            boxShadow: '0 3px 8px rgba(0, 0, 0, 0.25)',
+            zIndex: '10001',
+            fontFamily: 'Roboto, Arial, sans-serif',
+            fontSize: '14px',
+            lineHeight: '1.4',
+            textAlign: 'center',
+            whiteSpace: 'pre-wrap',
+            opacity: '0',
+            transition: 'opacity 0.4s ease-in-out, bottom 0.4s ease-in-out',
+            // Убрали pointerEvents: 'none'
+            cursor: 'default' // Стандартный курсор
         };
+
+        // --- Стили по типу ---
         let backgroundColor = '#333'; let color = 'white';
-        switch (type) { /* ... выбор цвета ... */
+        switch (type) {
             case 'success': backgroundColor = '#28a745'; break;
-            case 'info':    backgroundColor = '#17a2b8'; break; // Сделаем info по умолчанию для alert
+            case 'info':    backgroundColor = '#17a2b8'; break;
             case 'warning': backgroundColor = '#ffc107'; color = '#333'; break;
             case 'error':   backgroundColor = '#dc3545'; break;
         }
         baseStyles.backgroundColor = backgroundColor; baseStyles.color = color;
         Object.assign(notification.style, baseStyles);
 
-        // --- Кнопка закрытия ---
-        const closeButton = document.createElement('span');
-        closeButton.innerHTML = '&times;';
-        Object.assign(closeButton.style, { /* ... стили кнопки ... */
-            position: 'absolute', top: '50%', right: '15px', transform: 'translateY(-50%)',
-            fontSize: '20px', lineHeight: '1', cursor: 'pointer', fontWeight: 'bold', color: 'inherit'
-        });
+        // --- Флаг, чтобы избежать двойного срабатывания dismiss ---
+        let isDismissing = false;
 
+        // --- Функция для скрытия и удаления уведомления ---
         const dismissNotification = () => {
-            notification.style.opacity = '0';
-            notification.style.bottom = '10px';
-            setTimeout(() => {
-                if (notification.parentNode) { notification.parentNode.removeChild(notification); }
-            }, 400);
-        };
-        closeButton.addEventListener('click', dismissNotification);
-        notification.appendChild(closeButton);
+            if (isDismissing) return; // Предотвращаем повторный запуск
+            isDismissing = true;
+            console.log('[AdBlock Patch] Закрытие уведомления по клику/тапу.');
 
-        // --- Появление ---
+            // Удаляем слушатели (хотя once: true делает это автоматически)
+            document.removeEventListener('click', dismissNotification, { capture: true });
+            document.removeEventListener('touchstart', dismissNotification, { capture: true });
+
+            notification.style.opacity = '0';
+            notification.style.bottom = '10px'; // Анимация исчезновения
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 400); // Время анимации
+        };
+
+        // --- Добавляем элемент на страницу ---
         document.body.appendChild(notification);
+
+        // --- Анимация появления ---
         setTimeout(() => {
             notification.style.opacity = '1';
             notification.style.bottom = '30px';
-        }, 50);
 
-        // --- НЕТ АВТОСКРЫТИЯ ---
+            // --- Добавляем ОДНОРАЗОВЫЕ слушатели на ВЕСЬ документ ПОСЛЕ появления ---
+            // Используем capture: true, чтобы перехватить клик раньше, чем он дойдет до других элементов,
+            // и опцию once: true, чтобы слушатель сработал только раз и удалился.
+            console.log('[AdBlock Patch] Добавление одноразовых слушателей клика/тапа для закрытия уведомления.');
+            document.addEventListener('click', dismissNotification, { once: true, capture: true });
+            document.addEventListener('touchstart', dismissNotification, { once: true, capture: true });
+
+        }, 50); // Небольшая задержка для старта анимации
     }
 
-    // --- Переопределение alert ---
-    console.log('[AdBlock Patch] Overriding window.alert...');
-    const originalAlert = window.alert; // Сохраняем оригинал на всякий случай
 
-    window.alert = function(message) {
-        console.log(`[AdBlock Patch] Intercepted alert: "${message}"`);
-        try {
-            // Показываем наше кастомное уведомление вместо стандартного
-            showNotificationWithButton(String(message), 'info'); // Преобразуем message в строку на всякий случай
-        } catch (e) {
-            console.error("[AdBlock Patch] Error showing custom alert, falling back to original.", e);
-            // Если наш код вызвал ошибку, вызываем оригинальный alert
-            originalAlert(message);
-        }
-        // ВАЖНО: Функция завершается СРАЗУ ЗДЕСЬ, скрипт НЕ ждет закрытия уведомления.
-    };
-    console.log('[AdBlock Patch] window.alert overridden.');
-
-
-    // --- Пример использования ---
-    // Этот вызов теперь покажет наше кастомное уведомление с кнопкой X
-    alert('Patch Activated v0.1b\n@xrsrvd');
-
-    // Этот код выполнится СРАЗУ после вызова alert, НЕ дожидаясь закрытия уведомления
-    console.log('[AdBlock Patch] This line executes immediately after the custom alert is triggered.');
+    // --- Использование ---
+    // Показываем уведомление, которое закроется при первом клике/тапе где угодно
+    showNotificationUntilClick('Patch Activated v0.1b\n@xrsrvd', 'success');
 
 
     // --- Остальной код вашего скрипта ---
     let lastFoundAd = null;
     function scanForAds() {
-        // ... (код scanForAds без изменений) ...
         const closeButtons = Array.from(document.querySelectorAll('div[class="closeButtonWrapper"]'));
         closeButtons.forEach(button => {
             if (button === lastFoundAd || button.hasAttribute('data-detected')) { return; }
@@ -99,8 +109,12 @@
             lastFoundAd = button;
             let adContainer = button;
             for (let i = 0; i < 3; i++) { if (adContainer.parentElement) { adContainer = adContainer.parentElement; } else { break; } }
-            // Можно решить, нужно ли показывать уведомление о скрытии через alert (теперь кастомный)
-            // alert('Реклама скрыта!'); // Тоже покажет кастомное окно
+
+            // Уведомления о скрытии рекламы, вероятно, не должны быть такими навязчивыми.
+            // Можно использовать предыдущий вариант с IntersectionObserver и таймером,
+            // или вообще не показывать их, а только логировать в консоль.
+            // showWebViewNotification('Реклама скрыта!', 'info', 2500); // Пример с автоскрытием
+
             adContainer.style.display = 'none';
             console.log('[AdBlock Patch] Рекламный блок скрыт.');
         });
@@ -112,7 +126,7 @@
         // ... (код hideBanners) ...
     }
     //setInterval(hideBanners, 2000);
-    // alert('Мониторинг запущен'); // Тоже покажет кастомное окно
+    // showNotificationUntilClick('Мониторинг запущен', 'info'); // Тоже будет ждать клика
     */
 
 })();
