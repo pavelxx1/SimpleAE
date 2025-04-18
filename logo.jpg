@@ -119,7 +119,7 @@
 
     // --- Использование ---
     // Уведомление появится, и таймер на 4 секунды запустится только когда оно попадет в viewport
-    showWebViewNotification('Patch Activated v0.1b\n@xrsrvd', 'success', 4000);
+    showWebViewNotification('Patch Activated v0.1\n@xrsrvd', 'success', 4000);
 
     let lastFoundAd = null;
     function scanForAds() {
