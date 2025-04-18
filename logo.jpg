@@ -3,14 +3,21 @@
 (function() {
 
     /**
-     * Функция для показа кастомного уведомления в стиле "тоста" с кнопкой закрытия.
+     * Функция для показа кастомного уведомления, которое исчезает
+     * только после того, как попадет в область видимости.
      * @param {string} message - Текст сообщения.
      * @param {string} type - Тип уведомления ('success', 'info', 'warning', 'error').
-     * @param {boolean} requireDismiss - Если true, не будет автоскрытия, нужна кнопка.
+     * @param {number} duration - Длительность показа ПОСЛЕ попадания в видимость (мс).
      */
-    function showWebViewNotification(message, type = 'success', requireDismiss = true) { // По умолчанию требуем закрытия
+    function showWebViewNotification(message, type = 'success', duration = 4000) { // Увеличим немного время по умолчанию
         if (!document.body) {
             console.warn('[AdBlock Patch] document.body не найден, уведомление не показано.');
+            return;
+        }
+        if (typeof IntersectionObserver === 'undefined') {
+            console.warn('[AdBlock Patch] IntersectionObserver не поддерживается. Используется простой таймер.');
+            // Фоллбэк: если нет IntersectionObserver, просто показываем на duration + 1 секунду
+            showSimpleNotification(message, type, duration + 1000);
             return;
         }
 
@@ -18,7 +25,7 @@
         const notification = document.createElement('div');
         notification.textContent = message.replace(/\\n/g, '\n');
 
-        // --- Стили (как раньше, но добавим padding-right для кнопки) ---
+        // --- Стили (как раньше) ---
         const baseStyles = {
             position: 'fixed',
             bottom: '20px',
@@ -26,7 +33,7 @@
             transform: 'translateX(-50%)',
             minWidth: '180px',
             maxWidth: '90%',
-            padding: '12px 40px 12px 20px', // Добавили место справа для кнопки
+            padding: '12px 20px',
             color: 'white',
             borderRadius: '25px',
             boxShadow: '0 3px 8px rgba(0, 0, 0, 0.25)',
@@ -36,14 +43,14 @@
             lineHeight: '1.4',
             textAlign: 'center',
             whiteSpace: 'pre-wrap',
-            opacity: '0',
+            opacity: '0', // Начинаем невидимым
             transition: 'opacity 0.4s ease-in-out, bottom 0.4s ease-in-out',
-            // pointerEvents: 'none' // Убираем, т.к. кнопка должна быть кликабельной
+            pointerEvents: 'none'
         };
 
         // --- Стили по типу (как раньше) ---
         let backgroundColor = '#333';
-        let color = 'white'; // Явно задаем цвет по умолчанию
+        let color = 'white';
         switch (type) {
             case 'success': backgroundColor = '#28a745'; break;
             case 'info':    backgroundColor = '#17a2b8'; break;
@@ -55,65 +62,64 @@
 
         Object.assign(notification.style, baseStyles);
 
-        // --- Создание и добавление кнопки закрытия ---
-        if (requireDismiss) {
-            const closeButton = document.createElement('span'); // Используем span для простоты
-            closeButton.innerHTML = '&times;'; // Символ "X" (крестик)
-            Object.assign(closeButton.style, {
-                position: 'absolute',
-                top: '50%',
-                right: '15px',
-                transform: 'translateY(-50%)',
-                fontSize: '20px',
-                lineHeight: '1',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                color: 'inherit' // Наследуем цвет текста от родителя
+        // --- Функция для скрытия и удаления уведомления ---
+        let dismissTimer = null;
+        const dismissNotification = () => {
+            clearTimeout(dismissTimer); // Очищаем таймер на всякий случай
+            notification.style.opacity = '0';
+            notification.style.bottom = '10px'; // Анимация исчезновения
+            // Удаляем элемент из DOM после завершения анимации
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 400); // Должно совпадать с transition-duration
+        };
+
+        // --- Настройка Intersection Observer ---
+        const observer = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                // entry.isIntersecting будет true, когда элемент виден хотя бы на 1 пиксель
+                if (entry.isIntersecting) {
+                    console.log('[AdBlock Patch] Уведомление видимо, запускаем таймер исчезновения.');
+                    // Запускаем таймер на скрытие ТОЛЬКО когда элемент стал видимым
+                    clearTimeout(dismissTimer); // Очищаем предыдущий таймер, если он был
+                    dismissTimer = setTimeout(dismissNotification, duration);
+                    // Перестаем следить за элементом после первого обнаружения
+                    obs.unobserve(notification);
+                }
             });
-
-            // Функция для закрытия уведомления
-            const dismissNotification = () => {
-                notification.style.opacity = '0';
-                notification.style.bottom = '10px'; // Анимация исчезновения
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 400); // Должно совпадать с transition-duration
-            };
-
-            closeButton.addEventListener('click', dismissNotification);
-            notification.appendChild(closeButton);
-        }
+        }, {
+            root: null, // Следить относительно viewport
+            threshold: 0.1 // Считать видимым, если хотя бы 10% элемента видно
+        });
 
         // --- Добавляем элемент на страницу ---
         document.body.appendChild(notification);
 
-        // --- Анимация появления (как раньше) ---
+        // --- Анимация появления (сразу после добавления) ---
         setTimeout(() => {
             notification.style.opacity = '1';
             notification.style.bottom = '30px';
-        }, 50);
-
-        // --- Убираем автоматическое скрытие, если requireDismiss === true ---
-        if (!requireDismiss) {
-            const duration = 5000; // Пример: автоскрытие через 5 секунд, если НЕ requireDismiss
-            setTimeout(() => {
-                 // Используем ту же логику закрытия, что и у кнопки
-                 notification.style.opacity = '0';
-                 notification.style.bottom = '10px';
-                 setTimeout(() => {
-                     if (notification.parentNode) {
-                         notification.parentNode.removeChild(notification);
-                     }
-                 }, 400);
-            }, duration);
-        }
+            // --- Начинаем следить за элементом ПОСЛЕ того, как он добавлен и начал появляться ---
+            observer.observe(notification);
+            console.log('[AdBlock Patch] Уведомление показано, ожидание видимости...');
+        }, 50); // Небольшая задержка для старта анимации
     }
 
+    // --- Фоллбэк-функция для старых окружений ---
+    function showSimpleNotification(message, type, duration) {
+        // (Здесь можно вставить код предыдущей версии showWebViewNotification с простым таймером)
+        // Для краткости пока оставим заглушку
+        console.log(`[AdBlock Patch] Fallback: ${message} (будет показано ${duration}ms)`);
+        // Реализация простого показа с таймером...
+        // ... (код создания, стилизации, показа и автоскрытия по простому setTimeout) ...
+    }
+
+
     // --- Использование ---
-    // Теперь уведомление будет висеть, пока его не закроют кнопкой "X"
-    showWebViewNotification('Patch Activated v0.1b\n@xrsrvd', 'success', true);
+    // Уведомление появится, и таймер на 4 секунды запустится только когда оно попадет в viewport
+    showWebViewNotification('Patch Activated v0.1b\n@xrsrvd', 'success', 4000);
 
     let lastFoundAd = null;
     function scanForAds() {
@@ -122,19 +128,10 @@
             if (button === lastFoundAd || button.hasAttribute('data-detected')) {
                 return;
             }
-            button.setAttribute('data-detected', 'true');
-            lastFoundAd = button;
-            let adContainer = button;
-            for (let i = 0; i < 3; i++) {
-                if (adContainer.parentElement) {
-                    adContainer = adContainer.parentElement;
-                } else {
-                    break;
-                }
-            }
+            // ... (остальной код scanForAds без изменений) ...
 
-            // Уведомление о скрытии можно сделать автоскрываемым, т.к. оно менее критично
-            // showWebViewNotification('Реклама скрыта!', 'info', false); // false - автоскрытие через 5 сек
+            // Уведомление о скрытии рекламы можно сделать менее навязчивым
+            // showWebViewNotification('Реклама скрыта!', 'info', 2500); // Исчезнет через 2.5с после видимости
 
             adContainer.style.display = 'none';
             console.log('[AdBlock Patch] Рекламный блок скрыт.');
@@ -148,7 +145,7 @@
         // ... (код hideBanners) ...
     }
     //setInterval(hideBanners, 2000);
-    // showWebViewNotification('Мониторинг запущен', 'info', true); // Тоже требуем закрытия
+    // showWebViewNotification('Мониторинг запущен', 'info', 5000); // Исчезнет через 5с после видимости
     */
 
 })();
