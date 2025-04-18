@@ -1,8 +1,9 @@
-localStorage.setItem('pageHTML', document.documentElement.outerHTML);
+
 // Добавить кнопку для извлечения
 let btn = document.createElement('button');
 btn.innerText = 'Показать HTML из localStorage';
 btn.onclick = () => {
+  localStorage.setItem('pageHTML', document.documentElement.outerHTML);
   let textarea = document.createElement('textarea');
   textarea.value = localStorage.getItem('pageHTML');
   textarea.style.width = '100%';
