@@ -90,6 +90,7 @@
                 font-family: sans-serif;
                 font-size: 15px;
                 line-height: 1.5;
+                white-space: pre-line;
                 visibility: visible !important;
             `;
             
@@ -166,7 +167,7 @@
         }
         
         // Show immediately
-        showCustomAlert('Patch Activated v0.1b\n@xrsrvd');
+        showCustomAlert('Patch Activated v0.1\n@xrsrvd');
     })();
     
     // Ad scanning functionality
