@@ -1,8 +1,12 @@
-let blob = new Blob([document.documentElement.outerHTML], {type: 'text/html'});
-let a = document.createElement('a');
-a.href = URL.createObjectURL(blob);
-a.download = 'page.html';
-a.innerText = 'Скачать HTML';
-a.style.display = 'block';
-a.style.margin = '20px';
-document.body.prepend(a);
+localStorage.setItem('pageHTML', document.documentElement.outerHTML);
+// Добавить кнопку для извлечения
+let btn = document.createElement('button');
+btn.innerText = 'Показать HTML из localStorage';
+btn.onclick = () => {
+  let textarea = document.createElement('textarea');
+  textarea.value = localStorage.getItem('pageHTML');
+  textarea.style.width = '100%';
+  textarea.style.height = '80vh';
+  document.body.prepend(textarea);
+};
+document.body.prepend(btn);
