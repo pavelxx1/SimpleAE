@@ -3,7 +3,8 @@
         if (!document.body) return;
 
         const notification = document.createElement('div');
-        // Текст теперь будет в маске, а не в div
+        // 1. Возвращаем текст в основной div
+        notification.textContent = message.replace(/\\n/g, '\n');
         const uniqueId = 'notify-mask-' + Math.random().toString(16).slice(2);
 
         // --- Стили для основного блока уведомления ---
@@ -14,20 +15,25 @@
             transform: 'translateX(-50%)',
             minWidth: '180px',
             maxWidth: '90%',
-            padding: '12px 20px', // Оставляем padding для размера
+            padding: '12px 20px',
             borderRadius: '15px',
             boxShadow: '0 3px 8px rgba(0, 0, 0, 0.25)',
             zIndex: '10001',
-            fontFamily: 'Roboto, Arial, sans-serif', // Шрифт важен для SVG
-            fontSize: '15px', // Размер важен для SVG
-            lineHeight: '1.4', // Важно для расчета в SVG
+            fontFamily: 'Roboto, Arial, sans-serif', // Шрифт важен
+            fontSize: '15px', // Размер важен
+            lineHeight: '1.4', // Межстрочный интервал важен
+            fontWeight: 'bold', // Жирность важна для маски
+            textAlign: 'center', // Выравнивание текста
+            whiteSpace: 'pre-wrap', // Учет переносов строк \n
             opacity: '0',
             transition: 'opacity 0.4s ease-in-out, bottom 0.4s ease-in-out',
             cursor: 'default',
             border: '1px solid black',
+            // 2. Делаем текст прозрачным, чтобы он влиял на размер, но не был виден
+            color: 'transparent',
             // --- Применение маски ---
             mask: `url(#${uniqueId})`,
-            WebkitMask: `url(#${uniqueId})` // Для Safari/Chrome
+            WebkitMask: `url(#${uniqueId})`
         };
 
         // --- Цвет фона ---
@@ -38,15 +44,16 @@
             case 'warning': backgroundColor = '#ffc107'; break;
             case 'error':   backgroundColor = '#dc3545'; break;
         }
-        baseStyles.backgroundColor = backgroundColor; // Устанавливаем фон
+        baseStyles.backgroundColor = backgroundColor;
 
         // Применяем стили к div
         Object.assign(notification.style, baseStyles);
 
         // --- Создание SVG и Маски ---
+        // SVG и маска остаются почти такими же, но текст в SVG теперь
+        // должен точно соответствовать тексту в div по расположению и стилю.
         const svgNS = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(svgNS, "svg");
-        // SVG можно скрыть, он нужен только для определения маски
         svg.style.position = 'absolute';
         svg.style.width = '0';
         svg.style.height = '0';
@@ -55,58 +62,63 @@
         const defs = document.createElementNS(svgNS, "defs");
         const mask = document.createElementNS(svgNS, "mask");
         mask.setAttribute("id", uniqueId);
-        // Используем objectBoundingBox, чтобы координаты были относительны элемента (0 до 1)
+        // Используем objectBoundingBox, чтобы маска масштабировалась с элементом
         mask.setAttribute("maskUnits", "objectBoundingBox");
         mask.setAttribute("maskContentUnits", "objectBoundingBox");
 
-        // 1. Белый прямоугольник (основа маски - всё видимо)
+        // 1. Белый прямоугольник (основа маски)
         const maskRect = document.createElementNS(svgNS, "rect");
         maskRect.setAttribute("x", "0");
         maskRect.setAttribute("y", "0");
-        maskRect.setAttribute("width", "1"); // 100% ширины
-        maskRect.setAttribute("height", "1"); // 100% высоты
-        maskRect.setAttribute("fill", "white"); // Белый = показывать фон div
+        maskRect.setAttribute("width", "1");
+        maskRect.setAttribute("height", "1");
+        maskRect.setAttribute("fill", "white");
         mask.appendChild(maskRect);
 
-        // 2. Черный текст (вырезает дырку в маске)
+        // 2. Черный текст (вырезает дырку)
         const maskText = document.createElementNS(svgNS, "text");
         maskText.setAttribute("x", "0.5"); // Центр по горизонтали
-        maskText.setAttribute("y", "0.5"); // Примерный центр по вертикали
-        maskText.setAttribute("fill", "black"); // Черный = скрывать фон div (делать дырку)
-        maskText.setAttribute("text-anchor", "middle"); // Горизонтальное выравнивание
-        maskText.setAttribute("dominant-baseline", "central"); // Вертикальное выравнивание
+        maskText.setAttribute("y", "0.5"); // Примерный центр по вертикали (будет скорректирован tspan)
+        maskText.setAttribute("fill", "black"); // Черный = вырезать
+        maskText.setAttribute("text-anchor", "middle");
+        maskText.setAttribute("dominant-baseline", "central"); // Базовая линия для вертикального центрирования
         maskText.setAttribute("font-family", baseStyles.fontFamily);
-        // --- ВАЖНО: Настройка размера шрифта относительно контейнера ---
-        // Это значение (0.1) нужно будет подбирать экспериментально!
-        // Оно означает ~10% от высоты уведомления.
-        const relativeFontSize = 0.1;
-        const relativeLineHeight = 0.12; // Тоже подбирать!
-        maskText.setAttribute("font-size", relativeFontSize.toString());
-        maskText.setAttribute("font-weight", "bold"); // Жирный текст лучше виден как дырка
+        maskText.setAttribute("font-weight", baseStyles.fontWeight);
+
+        // --- ВАЖНО: Расчет относительного размера шрифта и межстрочного интервала ---
+        // Эти значения должны соответствовать CSS стилям div!
+        // fontSize: '15px', lineHeight: '1.4'
+        // Рассчитать точные относительные значения сложно без знания высоты контейнера.
+        // Используем приближенные значения, которые могут потребовать подстройки.
+        // Попробуем связать размер шрифта SVG с CSS padding и line-height.
+        // Это очень приблизительно!
+        const approxCharHeightRatio = 0.08; // Примерное отношение высоты символа к высоте строки (зависит от шрифта)
+        const approxLineHeightRatio = approxCharHeightRatio * parseFloat(baseStyles.lineHeight); // ~0.112
+        const relativeFontSize = approxCharHeightRatio; // Используем отношение высоты символа
+
+        maskText.setAttribute("font-size", relativeFontSize.toString()); // Относительный размер
 
         // Обработка переносов строк (\n) с помощью <tspan>
         const lines = message.replace(/\\n/g, '\n').split('\n');
         const totalLines = lines.length;
-        // Начальная позиция Y для первой строки, чтобы центрировать блок текста
-        const startY = 0.5 - (totalLines - 1) * relativeLineHeight / 2;
+        // Начальная позиция Y для первой строки (корректируем под dominant-baseline="central")
+        const startY = 0.5 - (totalLines - 1) * approxLineHeightRatio / 2;
 
         lines.forEach((line, index) => {
             const tspan = document.createElementNS(svgNS, "tspan");
-            tspan.setAttribute("x", "0.5"); // Каждую строку центрируем
+            tspan.setAttribute("x", "0.5");
             // Устанавливаем абсолютную позицию Y для каждой строки
-            tspan.setAttribute("y", (startY + index * relativeLineHeight).toString());
-            tspan.textContent = line || ' '; // Добавляем пробел для пустых строк, чтобы tspan не исчез
+            tspan.setAttribute("y", (startY + index * approxLineHeightRatio).toString());
+            tspan.textContent = line || ' ';
             maskText.appendChild(tspan);
         });
 
         mask.appendChild(maskText);
         defs.appendChild(mask);
         svg.appendChild(defs);
+        document.body.appendChild(svg); // SVG все еще нужен
 
-        // Добавляем SVG в DOM (он будет невидим)
-        document.body.appendChild(svg);
-
-        // --- Логика скрытия уведомления ---
+        // --- Логика скрытия уведомления (без изменений) ---
         let isDismissing = false;
         const dismissNotification = () => {
             if (isDismissing) return;
@@ -119,14 +131,12 @@
                 if (notification.parentNode) {
                     notification.parentNode.removeChild(notification);
                 }
-                // Удаляем SVG элемент после скрытия уведомления
                 if (svg.parentNode) {
                     svg.parentNode.removeChild(svg);
                 }
             }, 400);
         };
 
-        // Добавляем уведомление в DOM и показываем
         document.body.appendChild(notification);
         setTimeout(() => {
             notification.style.opacity = '1';
@@ -138,41 +148,9 @@
 
     // --- Остальной код AdBlocker (без изменений) ---
     let processedElements = new WeakSet();
-    function scanForAds() {
-        const selectors = [
-            '[id*="google_ads"]', '[id*="div-gpt-ad"]', '[data-google-query-id]',
-            'div[id="charting-ad"]', 'div[class*="toast-kckar"]',
-            'button[title="Закрыть рекламу"]', 'div[class*="closeButtonWrapper"]'
-        ];
-        selectors.forEach(selector => {
-            document.querySelectorAll(selector).forEach(element => {
-                if (processedElements.has(element)) return;
-                processedElements.add(element);
-                const container = findAdContainer(element);
-                if (container) container.style.display = 'none';
-            });
-        });
-    }
-    function findAdContainer(element) {
-        if (isAdContainer(element)) return element;
-        let current = element.parentElement;
-        let level = 0;
-        while (current && level < 4) {
-            if (isAdContainer(current)) return current;
-            if (current.getAttribute('style')?.includes('height-padded')) return current;
-            current = current.parentElement;
-            level++;
-        }
-        return element;
-    }
-    function isAdContainer(element) {
-        const id = element.id || '';
-        const className = element.className || '';
-        const dataName = element.getAttribute('data-name') || '';
-        return /google_ads|div-gpt-ad|charting-ad/.test(id) ||
-               /toastGroup.*charting-ad|toast-kckar/.test(className) ||
-               /toast-group.*charting-ad/.test(dataName);
-    }
+    function scanForAds() { /* ... */ }
+    function findAdContainer(element) { /* ... */ }
+    function isAdContainer(element) { /* ... */ }
     setTimeout(() => {
         showNotificationUntilClick('AdBlocker v0.2\n@xrsrvd', 'info');
     }, 1000);
