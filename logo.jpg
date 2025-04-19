@@ -1,183 +1,75 @@
 (function() {
     /**
-     * Показывает уведомление до первого клика в любом месте документа.
-     * Использует SVG маску для создания эффекта "дырки" в тексте.
-     * @param {string} message Текст уведомления. Поддерживает \n для переноса строк.
-     * @param {string} [type='info'] Тип уведомления ('success', 'info', 'warning', 'error'), влияет на цвет фона.
+     * Показывает уведомление в виде PNG изображения до первого клика.
+     * @param {string} imageUrl URL изображения для отображения.
+     * @param {object} [options] Дополнительные опции.
+     * @param {string} [options.width='300px'] Ширина уведомления.
+     * @param {string} [options.height='80px'] Высота уведомления.
      */
-    function showNotificationUntilClick(message, type = 'info') {
+    function showNotificationImageUntilClick(imageUrl, options = {}) {
         if (!document.body) {
             console.error("Тег <body> не найден.");
             return;
         }
 
         const notification = document.createElement('div');
-        // 1. Добавляем текст в основной div (он будет прозрачным)
-        notification.textContent = message.replace(/\\n/g, '\n');
-        // Генерируем уникальный ID для SVG маски
-        const uniqueId = 'notify-mask-' + Math.random().toString(16).slice(2);
+        const { width = '300px', height = '80px' } = options; // Размеры по умолчанию
 
-        // --- Стили для основного блока уведомления ---
+        // --- Стили для блока уведомления ---
         const baseStyles = {
             position: 'fixed',
             bottom: '20px',
             left: '50%',
             transform: 'translateX(-50%)',
-            minWidth: '180px', // Минимальная ширина
-            maxWidth: '90%',  // Максимальная ширина
-            padding: '12px 20px', // Внутренние отступы (важны для расчета высоты)
-            borderRadius: '15px', // Скругление углов
+            width: width,   // Задаем ширину
+            height: height, // Задаем высоту
+            borderRadius: '15px', // Скругление углов (можно убрать, если у PNG свои)
             boxShadow: '0 3px 8px rgba(0, 0, 0, 0.25)', // Тень
             zIndex: '10001', // Поверх других элементов
-            fontFamily: 'Roboto, Arial, sans-serif', // Шрифт (должен совпадать с SVG)
-            fontSize: '15px', // Размер шрифта (важен для расчета)
-            lineHeight: '1.4', // Межстрочный интервал (важен для расчета)
-            fontWeight: 'bold', // Жирность шрифта (должна совпадать с SVG)
-            textAlign: 'center', // Выравнивание текста
-            whiteSpace: 'pre-wrap', // Обработка переносов строк
             opacity: '0', // Начальная прозрачность для анимации
-            transition: 'opacity 0.4s ease-in-out, bottom 0.4s ease-in-out', // Анимация появления
+            transition: 'opacity 0.4s ease-in-out, bottom 0.4s ease-in-out', // Анимация
             cursor: 'default', // Стандартный курсор
-            border: '1px solid black', // Черная рамка
-            // 2. Делаем текст прозрачным, чтобы он не был виден, но влиял на размер блока
-            color: 'transparent',
-            // 3. Применяем SVG маску
-            mask: `url(#${uniqueId})`,
-            WebkitMask: `url(#${uniqueId})` // Префикс для Safari/Chrome
+            // --- Стили для отображения PNG как фона ---
+            backgroundImage: `url('${imageUrl}')`, // Устанавливаем фон из URL
+            backgroundSize: 'contain', // Масштабирует изображение, чтобы оно поместилось внутри элемента
+            backgroundRepeat: 'no-repeat', // Не повторять изображение
+            backgroundPosition: 'center', // Центрировать изображение
+            backgroundColor: 'transparent' // Фон самого div прозрачный
+            // Убраны стили текста, padding, border, mask и т.д.
         };
 
-        // --- Определение цвета фона в зависимости от типа ---
-        let backgroundColor = '#2eaf17'; // По умолчанию зеленый (как на примере)
-        switch (type) {
-            case 'success': backgroundColor = '#28a745'; break; // Зеленый успех
-            case 'info':    backgroundColor = '#2eaf17'; break; // Зеленый инфо
-            case 'warning': backgroundColor = '#ffc107'; break; // Желтый предупреждение
-            case 'error':   backgroundColor = '#dc3545'; break; // Красный ошибка
-        }
-        baseStyles.backgroundColor = backgroundColor; // Устанавливаем цвет фона
-
-        // Применяем все стили к div уведомления
+        // Применяем стили к div уведомления
         Object.assign(notification.style, baseStyles);
-
-        // --- Расчет относительных размеров для текста в SVG маске ---
-        // Эти расчеты являются приближенными и могут потребовать ручной подстройки.
-        const lines = message.replace(/\\n/g, '\n').split('\n');
-        const num_lines = lines.length;
-        const css_font_size_px = parseFloat(baseStyles.fontSize) || 15;
-        const css_line_height_mult = parseFloat(baseStyles.lineHeight) || 1.4;
-        // Учитываем вертикальный padding (верх + низ)
-        const css_padding_vertical_px = (parseFloat(baseStyles.padding.split(' ')[0]) || 12) * 2;
-
-        // Приблизительная оценка высоты блока текста + вертикальный padding
-        // ВНИМАНИЕ: Этот расчет не учитывает автоматический перенос строк из-за ширины!
-        // Он точен только если текст помещается в одну строку или переносы заданы через \n.
-        const text_block_height_px = num_lines * css_font_size_px * css_line_height_mult;
-        const total_height_px = text_block_height_px + css_padding_vertical_px;
-
-        // Относительные размеры шрифта и межстрочного интервала для SVG
-        // (с защитой от деления на ноль)
-        // ==================================================================
-        // !!! НАСТРОЙКА ЗДЕСЬ !!!
-        // Попробуйте немного изменять эти значения (например, +/- 0.005 или 0.01),
-        // если "дырка" не точно совпадает с текстом.
-        // ==================================================================
-        const relativeFontSize = total_height_px > 0 ? (css_font_size_px / total_height_px) : 0.1;
-        const relativeLineHeight = total_height_px > 0 ? (css_font_size_px * css_line_height_mult) / total_height_px : 0.12;
-        // ==================================================================
-
-        // --- Создание скрытого SVG элемента для маски ---
-        const svgNS = "http://www.w3.org/2000/svg";
-        const svg = document.createElementNS(svgNS, "svg");
-        // SVG не должен быть виден или влиять на компоновку страницы
-        svg.style.position = 'absolute';
-        svg.style.width = '0';
-        svg.style.height = '0';
-        svg.style.overflow = 'hidden';
-
-        const defs = document.createElementNS(svgNS, "defs"); // Контейнер для определений (маски)
-        const mask = document.createElementNS(svgNS, "mask"); // Создаем саму маску
-        mask.setAttribute("id", uniqueId); // Уникальный ID для ссылки из CSS
-        // Единицы измерения маски и ее содержимого - относительно размеров элемента, к которому она применяется
-        mask.setAttribute("maskUnits", "objectBoundingBox");
-        mask.setAttribute("maskContentUnits", "objectBoundingBox");
-
-        // 1. Белый прямоугольник внутри маски:
-        // Белый цвет означает "показывать" ту часть элемента, к которой применена маска.
-        const maskRect = document.createElementNS(svgNS, "rect");
-        maskRect.setAttribute("x", "0"); // От левого края
-        maskRect.setAttribute("y", "0"); // От верхнего края
-        maskRect.setAttribute("width", "1"); // 100% ширины
-        maskRect.setAttribute("height", "1"); // 100% высоты
-        maskRect.setAttribute("fill", "white"); // Показывать фон элемента
-        mask.appendChild(maskRect);
-
-        // 2. Черный текст внутри маски:
-        // Черный цвет означает "скрывать" (делать прозрачным) ту часть элемента,
-        // к которой применена маска, создавая эффект "дырки".
-        const maskText = document.createElementNS(svgNS, "text");
-        maskText.setAttribute("x", "0.5"); // Центрируем текст по горизонтали (0.5 = 50%)
-        maskText.setAttribute("y", "0.5"); // Базовая точка для вертикального центрирования (будет скорректирована tspan)
-        maskText.setAttribute("fill", "black"); // Черный = вырезать "дырку"
-        maskText.setAttribute("text-anchor", "middle"); // Горизонтальное выравнивание относительно x="0.5"
-        maskText.setAttribute("dominant-baseline", "central"); // Вертикальное выравнивание блока текста относительно y="0.5"
-        maskText.setAttribute("font-family", baseStyles.fontFamily); // Тот же шрифт, что и в CSS
-        maskText.setAttribute("font-weight", baseStyles.fontWeight); // Та же жирность, что и в CSS
-        maskText.setAttribute("font-size", relativeFontSize.toString()); // Применяем рассчитанный относительный размер
-
-        // Обработка переносов строк (\n) с помощью <tspan>
-        // Рассчитываем начальную позицию Y для первой строки, чтобы весь блок текста был отцентрирован
-        const startY = 0.5 - (num_lines - 1) * relativeLineHeight / 2;
-
-        lines.forEach((line, index) => {
-            const tspan = document.createElementNS(svgNS, "tspan");
-            tspan.setAttribute("x", "0.5"); // Каждая строка тоже центрируется
-            // Устанавливаем абсолютную позицию Y для каждой строки на основе рассчитанного интервала
-            tspan.setAttribute("y", (startY + index * relativeLineHeight).toString());
-            tspan.textContent = line || ' '; // Если строка пустая, добавляем пробел, чтобы tspan не исчез
-            maskText.appendChild(tspan); // Добавляем строку в текстовый блок маски
-        });
-
-        mask.appendChild(maskText); // Добавляем текстовый блок в маску
-        defs.appendChild(mask); // Добавляем маску в определения
-        svg.appendChild(defs); // Добавляем определения в SVG
-        document.body.appendChild(svg); // Добавляем скрытый SVG в DOM
 
         // --- Логика скрытия уведомления при клике ---
         let isDismissing = false;
         const dismissNotification = () => {
-            if (isDismissing) return; // Предотвращаем повторное срабатывание
+            if (isDismissing) return;
             isDismissing = true;
-            // Удаляем слушатели событий
             document.removeEventListener('click', dismissNotification, { capture: true });
             document.removeEventListener('touchstart', dismissNotification, { capture: true });
-            // Запускаем анимацию исчезновения
             notification.style.opacity = '0';
-            notification.style.bottom = '10px'; // Сдвигаем вниз при исчезновении
-            // Удаляем элементы из DOM после завершения анимации
+            notification.style.bottom = '10px';
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.parentNode.removeChild(notification);
                 }
-                // Важно удалить и SVG элемент, чтобы не засорять DOM
-                if (svg.parentNode) {
-                    svg.parentNode.removeChild(svg);
-                }
-            }, 400); // Время должно совпадать с transition duration
+                // SVG больше нет, удалять не нужно
+            }, 400);
         };
 
         // Добавляем уведомление в DOM
         document.body.appendChild(notification);
-        // Запускаем анимацию появления через небольшую задержку
+        // Запускаем анимацию появления
         setTimeout(() => {
             notification.style.opacity = '1';
-            notification.style.bottom = '30px'; // Поднимаем на финальную позицию
-            // Устанавливаем слушатели для скрытия уведомления по клику/тапу
+            notification.style.bottom = '30px';
             document.addEventListener('click', dismissNotification, { once: true, capture: true });
             document.addEventListener('touchstart', dismissNotification, { once: true, capture: true });
-        }, 50); // Небольшая задержка для срабатывания transition
+        }, 50);
     }
 
-    // --- Остальной код AdBlocker (без изменений) ---
+    // --- Остальной код AdBlocker (можно оставить или убрать, он не влияет на показ картинки) ---
     let processedElements = new WeakSet();
 
     function scanForAds() {
@@ -192,7 +84,6 @@
                 processedElements.add(element);
                 const container = findAdContainer(element);
                 if (container) {
-                    // console.log('Ad detected and hidden:', container); // Для отладки
                     container.style.display = 'none';
                 }
             });
@@ -209,7 +100,6 @@
             current = current.parentElement;
             level++;
         }
-        // Если ничего не найдено выше, скрываем сам элемент (менее надежно)
         return element;
     }
 
@@ -222,33 +112,25 @@
                /toast-group.*charting-ad/.test(dataName);
     }
 
-    // Показываем уведомление при запуске скрипта
+    // Показываем уведомление-картинку при запуске скрипта
     setTimeout(() => {
-        showNotificationUntilClick('AdBlocker v0.2\n@xrsrvd', 'info'); // Вызываем с типом 'info' для зеленого фона
-    }, 1000); // Небольшая задержка после загрузки страницы
+        const imageUrl = 'https://i.ibb.co/WTDBbsR/t.png'; // Ваша ссылка на PNG
+        // Можно задать другие размеры, если стандартные 300x80 не подходят
+        showNotificationImageUntilClick(imageUrl, { width: '300px', height: '80px' });
+    }, 1000);
 
-    // Первое сканирование рекламы
+    // Запуск сканирования рекламы
     setTimeout(scanForAds, 500);
-
-    // Наблюдатель за изменениями в DOM для поиска новой рекламы
     if (window.MutationObserver) {
         const observer = new MutationObserver(() => {
-            // Используем requestAnimationFrame для оптимизации, чтобы сканирование не выполнялось слишком часто
             requestAnimationFrame(scanForAds);
         });
-        // Наблюдаем за всем body и его потомками
         observer.observe(document.body || document.documentElement, {
-            childList: true, // Отслеживать добавление/удаление дочерних узлов
-            subtree: true    // Отслеживать изменения во всех потомках
+            childList: true,
+            subtree: true
         });
     } else {
-        console.warn("MutationObserver не поддерживается, периодическое сканирование будет менее эффективным.");
-        // Резервный вариант для старых браузеров - периодическое сканирование
-         setInterval(scanForAds, 2000); // Увеличим интервал для резервного варианта
+        setInterval(scanForAds, 2000);
     }
-
-    // Дополнительное периодическое сканирование на всякий случай
-    // (может быть избыточным при работающем MutationObserver)
-    // setInterval(scanForAds, 5000); // Можно закомментировать, если MutationObserver работает стабильно
 
 })();
