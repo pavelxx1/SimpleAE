@@ -1,177 +1,228 @@
 (function() {
     function showNotificationUntilClick(message, type = 'info') {
         if (!document.body) return;
-
-        const notification = document.createElement('div');
-        notification.textContent = message.replace(/\\n/g, '\n');
-        const baseStyles = {
-            position: 'fixed',
-            bottom: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            minWidth: '180px',
-            maxWidth: '90%',
-            padding: '12px 20px',
-            // Цвет текста будет управляться маской или установлен как прозрачный
-            borderRadius: '15px',
-            boxShadow: '0 3px 8px rgba(0, 0, 0, 0.25)',
-            zIndex: '10001',
-            fontFamily: 'Roboto, Arial, sans-serif',
-            fontSize: '15px',
-            fontWeight: 'bold', // Жирный шрифт для лучшей видимости выреза
-            lineHeight: '1.4',
-            textAlign: 'center',
-            whiteSpace: 'pre-wrap',
-            opacity: '0',
-            transition: 'opacity 0.4s ease-in-out, bottom 0.4s ease-in-out',
-            cursor: 'default',
-            border: '1px solid black' // Added black border
-        };
-
+        
+        // Create main container
+        const notificationContainer = document.createElement('div');
+        notificationContainer.style.position = 'fixed';
+        notificationContainer.style.bottom = '20px';
+        notificationContainer.style.left = '50%';
+        notificationContainer.style.transform = 'translateX(-50%)';
+        notificationContainer.style.minWidth = '180px';
+        notificationContainer.style.maxWidth = '90%';
+        notificationContainer.style.zIndex = '10001';
+        notificationContainer.style.opacity = '0';
+        notificationContainer.style.transition = 'opacity 0.4s ease-in-out, bottom 0.4s ease-in-out';
+        
+        // Create background element (green background)
+        const background = document.createElement('div');
         let backgroundColor = '#333';
-        let textColor = 'white'; // Стандартный цвет текста
-
         switch (type) {
-            case 'success':
-                backgroundColor = '#28a745';
-                break;
-            case 'info':
-                backgroundColor = '#2eaf17'; // Зеленый фон контейнера
-                // Для эффекта вырезания цвет текста не важен, т.к. он будет маской
-                break;
-            case 'warning':
-                backgroundColor = '#ffc107';
-                textColor = '#333';
-                break;
-            case 'error':
-                backgroundColor = '#dc3545';
-                break;
+            case 'success': backgroundColor = '#28a745'; break;
+            case 'info':    backgroundColor = '#2eaf17'; break;
+            case 'warning': backgroundColor = '#ffc107'; break;
+            case 'error':   backgroundColor = '#dc3545'; break;
         }
-
-        // Применяем базовые стили
-        Object.assign(notification.style, baseStyles);
-
-        // Устанавливаем фон контейнера
-        notification.style.backgroundColor = backgroundColor;
-
-        // Сбрасываем свойства, которые могут помешать маске
-        notification.style.backgroundImage = 'none';
-        notification.style.webkitBackgroundClip = 'unset';
-        notification.style.backgroundClip = 'unset';
-        notification.style.webkitMaskImage = 'none';
-        notification.style.maskImage = 'none';
-        notification.style.webkitMaskClip = 'unset';
-        notification.style.maskClip = 'unset';
-        notification.style.webkitMaskComposite = 'source-over'; // Reset composite
-        notification.style.maskComposite = 'add'; // Reset composite
-
-
-        if (type === 'info') {
-            // --- Применяем CSS Маску для эффекта вырезания ---
-
-            // 1. Создаем маску: черный фон (непрозрачный)
-            notification.style.webkitMaskImage = 'linear-gradient(black, black)';
-            notification.style.maskImage = 'linear-gradient(black, black)';
-
-            // 2. Обрезаем маску по форме текста
-            // Текст становится "прозрачной" областью в маске
-            notification.style.webkitMaskClip = 'text';
-            notification.style.maskClip = 'text';
-
-            // 3. Композиция маски: вычитаем текстовую область из основной маски
-            // Это делает область текста полностью прозрачной в элементе
-            notification.style.webkitMaskComposite = 'destination-out'; // Для WebKit (Chrome, Safari)
-            notification.style.maskComposite = 'exclude'; // Стандартное свойство
-
-            // 4. Делаем сам текст невидимым (прозрачным),
-            // чтобы он не перекрывал "дырку", созданную маской.
-            notification.style.color = 'transparent';
-
-        } else {
-            // Для других типов уведомлений используем стандартный цвет текста
-            notification.style.color = textColor;
-        }
-
+        
+        background.style.backgroundColor = backgroundColor;
+        background.style.position = 'absolute';
+        background.style.top = '0';
+        background.style.left = '0';
+        background.style.width = '100%';
+        background.style.height = '100%';
+        background.style.borderRadius = '15px';
+        background.style.boxShadow = '0 3px 8px rgba(0, 0, 0, 0.25)';
+        background.style.border = '1px solid black';
+        
+        // Create mask element using SVG
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("width", "100%");
+        svg.setAttribute("height", "100%");
+        svg.style.position = "absolute";
+        svg.style.top = "0";
+        svg.style.left = "0";
+        
+        // Create text for masking
+        const text = document.createElementNS(svgNS, "text");
+        text.setAttribute("x", "50%");
+        text.setAttribute("y", "50%");
+        text.setAttribute("dominant-baseline", "middle");
+        text.setAttribute("text-anchor", "middle");
+        text.setAttribute("font-family", "Roboto, Arial, sans-serif");
+        text.setAttribute("font-size", "15px");
+        text.setAttribute("fill", "black");
+        
+        // Support for multiline text
+        const lines = message.split('\n');
+        let lineY = 50 - ((lines.length - 1) * 10);
+        
+        lines.forEach(line => {
+            const tspan = document.createElementNS(svgNS, "tspan");
+            tspan.setAttribute("x", "50%");
+            tspan.setAttribute("y", lineY + "%");
+            tspan.textContent = line;
+            text.appendChild(tspan);
+            lineY += 20;
+        });
+        
+        // Create mask
+        const mask = document.createElementNS(svgNS, "mask");
+        mask.setAttribute("id", "textMask");
+        
+        const rect = document.createElementNS(svgNS, "rect");
+        rect.setAttribute("width", "100%");
+        rect.setAttribute("height", "100%");
+        rect.setAttribute("fill", "white");
+        
+        const textClone = text.cloneNode(true);
+        textClone.setAttribute("fill", "black");
+        
+        mask.appendChild(rect);
+        mask.appendChild(textClone);
+        
+        svg.appendChild(mask);
+        
+        // Create the cutout rectangle
+        const cutout = document.createElementNS(svgNS, "rect");
+        cutout.setAttribute("width", "100%");
+        cutout.setAttribute("height", "100%");
+        cutout.setAttribute("fill", "black");
+        cutout.setAttribute("mask", "url(#textMask)");
+        
+        svg.appendChild(cutout);
+        
+        // Add padding with a wrapping div
+        const paddingWrapper = document.createElement('div');
+        paddingWrapper.style.position = 'relative';
+        paddingWrapper.style.padding = '12px 20px';
+        paddingWrapper.style.whiteSpace = 'pre-wrap';
+        
+        // Assemble the notification
+        paddingWrapper.appendChild(background);
+        paddingWrapper.appendChild(svg);
+        notificationContainer.appendChild(paddingWrapper);
+        
+        // Dismissal logic
         let isDismissing = false;
         const dismissNotification = () => {
             if (isDismissing) return;
             isDismissing = true;
             document.removeEventListener('click', dismissNotification, { capture: true });
             document.removeEventListener('touchstart', dismissNotification, { capture: true });
-            notification.style.opacity = '0';
-            notification.style.bottom = '10px';
+            notificationContainer.style.opacity = '0';
+            notificationContainer.style.bottom = '10px';
             setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
+                if (notificationContainer.parentNode) {
+                    notificationContainer.parentNode.removeChild(notificationContainer);
                 }
             }, 400);
         };
-
-        document.body.appendChild(notification);
+        
+        document.body.appendChild(notificationContainer);
+        
+        // Calculate size based on text
+        const tempText = document.createElement('div');
+        tempText.style.position = 'absolute';
+        tempText.style.visibility = 'hidden';
+        tempText.style.whiteSpace = 'pre-wrap';
+        tempText.style.fontFamily = 'Roboto, Arial, sans-serif';
+        tempText.style.fontSize = '15px';
+        tempText.textContent = message;
+        document.body.appendChild(tempText);
+        
+        const textWidth = tempText.offsetWidth;
+        const textHeight = tempText.offsetHeight;
+        document.body.removeChild(tempText);
+        
+        // Set minimum dimensions
+        paddingWrapper.style.minWidth = Math.max(textWidth, 140) + 'px';
+        paddingWrapper.style.minHeight = Math.max(textHeight, 20) + 'px';
+        
+        // Show the notification
         setTimeout(() => {
-            notification.style.opacity = '1';
-            notification.style.bottom = '30px';
+            notificationContainer.style.opacity = '1';
+            notificationContainer.style.bottom = '30px';
             document.addEventListener('click', dismissNotification, { once: true, capture: true });
             document.addEventListener('touchstart', dismissNotification, { once: true, capture: true });
         }, 50);
     }
 
-    // --- Остальной код AdBlocker без изменений ---
-
     let processedElements = new WeakSet();
-
+    
     function scanForAds() {
+        // Специфичные селекторы для рекламы
         const selectors = [
+            // Google Ads
             '[id*="google_ads"]',
             '[id*="div-gpt-ad"]',
             '[data-google-query-id]',
+            
+            // Toast реклама
             'div[id="charting-ad"]',
             'div[class*="toast-kckar"]',
+            
+            // Кнопки закрытия рекламы
             'button[title="Закрыть рекламу"]',
             'div[class*="closeButtonWrapper"]'
         ];
-
+        
         selectors.forEach(selector => {
             document.querySelectorAll(selector).forEach(element => {
                 if (processedElements.has(element)) return;
                 processedElements.add(element);
+                
+                // Находим контейнер рекламы
                 const container = findAdContainer(element);
                 if (container) container.style.display = 'none';
             });
         });
     }
-
+    
     function findAdContainer(element) {
+        // Проверяем сам элемент
         if (isAdContainer(element)) return element;
+        
+        // Проверяем родителей (максимум 4 уровня)
         let current = element.parentElement;
         let level = 0;
+        
         while (current && level < 4) {
             if (isAdContainer(current)) return current;
+            
+            // Проверяем стили
             if (current.getAttribute('style')?.includes('height-padded')) {
                 return current;
             }
+            
             current = current.parentElement;
             level++;
         }
+        
+        // Резервный вариант: сам элемент
         return element;
     }
-
+    
     function isAdContainer(element) {
         const id = element.id || '';
         const className = element.className || '';
         const dataName = element.getAttribute('data-name') || '';
-        return /google_ads|div-gpt-ad|charting-ad/.test(id) ||
+        
+        // Специфичные признаки рекламы
+        return /google_ads|div-gpt-ad|charting-ad/.test(id) || 
                /toastGroup.*charting-ad|toast-kckar/.test(className) ||
                /toast-group.*charting-ad/.test(dataName);
     }
-
+    
+    // Показываем уведомление с задержкой 1 секунду
     setTimeout(() => {
-        // Вызываем уведомление типа 'info', чтобы увидеть эффект вырезания
-        showNotificationUntilClick('AdBlocker v0.82\n@xrsrvd', 'info');
+        showNotificationUntilClick('AdBlocker v0.3\n@xrsrvd', 'info');
     }, 1000);
-
+    
+    // Начальное сканирование
     setTimeout(scanForAds, 500);
-
+    
+    // Наблюдатель за DOM
     const observer = new MutationObserver(() => requestAnimationFrame(scanForAds));
     observer.observe(document.body, {
         childList: true,
@@ -179,6 +230,7 @@
         attributes: false,
         characterData: false
     });
-
+    
+    // Периодическое сканирование
     setInterval(scanForAds, 1000);
 })();
