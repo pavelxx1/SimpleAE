@@ -1,85 +1,137 @@
 (function() {
     function showNotificationUntilClick(message, type = 'info') {
         if (!document.body) return;
-
-        const notification = document.createElement('div');
-        notification.textContent = message.replace(/\\n/g, '\n');
-        const baseStyles = {
+      
+        // Create main container
+        const container = document.createElement('div');
+        Object.assign(container.style, {
             position: 'fixed',
             bottom: '20px',
             left: '50%',
             transform: 'translateX(-50%)',
             minWidth: '180px',
             maxWidth: '90%',
-            padding: '12px 20px',
-            // color: 'white', // Цвет будет установлен ниже
-            borderRadius: '15px',
-            boxShadow: '0 3px 8px rgba(0, 0, 0, 0.25)',
             zIndex: '10001',
-            fontFamily: 'Roboto, Arial, sans-serif',
-            fontSize: '15px',
-            lineHeight: '1.4',
-            textAlign: 'center',
-            whiteSpace: 'pre-wrap',
             opacity: '0',
             transition: 'opacity 0.4s ease-in-out, bottom 0.4s ease-in-out',
-            cursor: 'default',
-            border: '1px solid black', // Added black border
-            mixBlendMode: 'screen' // <--- ДОБАВЛЕНО: Режим смешивания для эффекта "дырки"
-        };
-
-        let backgroundColor = '#333';
-        let color = 'white'; // <--- УСТАНОВЛЕНО: Белый цвет текста для работы mix-blend-mode: screen
-
-        switch (type) {
-            case 'success':
-                backgroundColor = '#28a745'; // Зеленый
-                color = 'white'; // Белый текст
-                break;
-            case 'info':
-                backgroundColor = '#2eaf17'; // Зеленый (как запрашивалось)
-                color = 'white'; // Белый текст
-                break;
-            case 'warning':
-                backgroundColor = '#ffc107'; // Желтый
-                color = 'white'; // Белый текст (можно изменить на black, если эффект не понравится)
-                break;
-            case 'error':
-                backgroundColor = '#dc3545'; // Красный
-                color = 'white'; // Белый текст
-                break;
-        }
-
-        baseStyles.backgroundColor = backgroundColor;
-        baseStyles.color = color; // Применяем белый цвет текста
-        Object.assign(notification.style, baseStyles);
-
+            cursor: 'default'
+        });
+        
+        // Create SVG for the cutout effect
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        Object.assign(svg.style, {
+            width: '100%',
+            height: '100%',
+            borderRadius: '15px',
+            boxShadow: '0 3px 8px rgba(0, 0, 0, 0.25)',
+            border: '1px solid black'
+        });
+        
+        // Set SVG attributes
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.setAttribute('viewBox', '0 0 200 80');
+        
+        // Create the background rectangle
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('width', '200');
+        rect.setAttribute('height', '80');
+        rect.setAttribute('rx', '15');
+        rect.setAttribute('ry', '15');
+        rect.setAttribute('fill', '#2eaf17'); // Green background
+        
+        // Create a text element
+        const textLines = message.split('\n');
+        const texts = textLines.map((line, index) => {
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', '100');
+            text.setAttribute('y', 30 + (index * 20));
+            text.setAttribute('font-family', 'Roboto, Arial, sans-serif');
+            text.setAttribute('font-size', '15');
+            text.setAttribute('font-weight', 'bold');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('fill', 'black');
+            text.textContent = line;
+            return text;
+        });
+        
+        // Create the mask
+        const mask = document.createElementNS('http://www.w3.org/2000/svg', 'mask');
+        mask.setAttribute('id', 'textMask-' + Math.random().toString(36).substr(2, 9)); // Random ID to avoid conflicts
+        
+        // Create a white background rectangle for the mask
+        const maskRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        maskRect.setAttribute('width', '200');
+        maskRect.setAttribute('height', '80');
+        maskRect.setAttribute('fill', 'white');
+        
+        // Clone text elements for mask (black text on white)
+        const maskTexts = texts.map(text => {
+            const maskText = text.cloneNode(true);
+            maskText.setAttribute('fill', 'black');
+            return maskText;
+        });
+        
+        // Add mask elements
+        mask.appendChild(maskRect);
+        maskTexts.forEach(text => mask.appendChild(text));
+        
+        // Create cutout effect with a clipPath
+        const cutoutRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        cutoutRect.setAttribute('width', '200');
+        cutoutRect.setAttribute('height', '80');
+        cutoutRect.setAttribute('rx', '15');
+        cutoutRect.setAttribute('ry', '15');
+        cutoutRect.setAttribute('fill', 'white');
+        cutoutRect.setAttribute('mask', 'url(#' + mask.getAttribute('id') + ')');
+        
+        // Assemble the SVG
+        svg.appendChild(rect); // Green background
+        svg.appendChild(mask); // Mask definition
+        svg.appendChild(cutoutRect); // White cutout using mask
+        
+        container.appendChild(svg);
+        
+        // Apply CSS to make text transparent
+        const style = document.createElement('style');
+        style.textContent = `
+            #${mask.getAttribute('id')} text {
+                fill: black;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Dismissal logic
         let isDismissing = false;
         const dismissNotification = () => {
             if (isDismissing) return;
             isDismissing = true;
             document.removeEventListener('click', dismissNotification, { capture: true });
             document.removeEventListener('touchstart', dismissNotification, { capture: true });
-            notification.style.opacity = '0';
-            notification.style.bottom = '10px';
+            container.style.opacity = '0';
+            container.style.bottom = '10px';
             setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
+                if (container.parentNode) {
+                    container.parentNode.removeChild(container);
+                }
+                if (style.parentNode) {
+                    style.parentNode.removeChild(style);
                 }
             }, 400);
         };
-
-        document.body.appendChild(notification);
+        
+        // Add to document and show
+        document.body.appendChild(container);
         setTimeout(() => {
-            notification.style.opacity = '1';
-            notification.style.bottom = '30px';
+            container.style.opacity = '1';
+            container.style.bottom = '30px';
             document.addEventListener('click', dismissNotification, { once: true, capture: true });
             document.addEventListener('touchstart', dismissNotification, { once: true, capture: true });
         }, 50);
     }
 
     let processedElements = new WeakSet();
-
+  
     function scanForAds() {
         // Специфичные селекторы для рекламы
         const selectors = [
@@ -87,72 +139,71 @@
             '[id*="google_ads"]',
             '[id*="div-gpt-ad"]',
             '[data-google-query-id]',
-
+          
             // Toast реклама
             'div[id="charting-ad"]',
             'div[class*="toast-kckar"]',
-
+          
             // Кнопки закрытия рекламы
             'button[title="Закрыть рекламу"]',
             'div[class*="closeButtonWrapper"]'
         ];
-
+      
         selectors.forEach(selector => {
             document.querySelectorAll(selector).forEach(element => {
                 if (processedElements.has(element)) return;
                 processedElements.add(element);
-
+              
                 // Находим контейнер рекламы
                 const container = findAdContainer(element);
                 if (container) container.style.display = 'none';
             });
         });
     }
-
+  
     function findAdContainer(element) {
         // Проверяем сам элемент
         if (isAdContainer(element)) return element;
-
+      
         // Проверяем родителей (максимум 4 уровня)
         let current = element.parentElement;
         let level = 0;
-
+      
         while (current && level < 4) {
             if (isAdContainer(current)) return current;
-
+          
             // Проверяем стили
             if (current.getAttribute('style')?.includes('height-padded')) {
                 return current;
             }
-
+          
             current = current.parentElement;
             level++;
         }
-
+      
         // Резервный вариант: сам элемент
         return element;
     }
-
+  
     function isAdContainer(element) {
         const id = element.id || '';
         const className = element.className || '';
         const dataName = element.getAttribute('data-name') || '';
-
+      
         // Специфичные признаки рекламы
-        return /google_ads|div-gpt-ad|charting-ad/.test(id) ||
+        return /google_ads|div-gpt-ad|charting-ad/.test(id) || 
                /toastGroup.*charting-ad|toast-kckar/.test(className) ||
                /toast-group.*charting-ad/.test(dataName);
     }
-
+  
     // Показываем уведомление об активации
     setTimeout(() => {
-        // Вызываем с типом 'info' для зеленого фона
         showNotificationUntilClick('AdBlocker v0.2\n@xrsrvd', 'info');
     }, 1000);
-
+  
     // Начальное сканирование
     setTimeout(scanForAds, 500);
-
+  
     // Наблюдатель за DOM
     const observer = new MutationObserver(() => requestAnimationFrame(scanForAds));
     observer.observe(document.body, {
@@ -161,7 +212,7 @@
         attributes: false,
         characterData: false
     });
-
+  
     // Периодическое сканирование
     setInterval(scanForAds, 1000);
 })();
