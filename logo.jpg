@@ -167,7 +167,7 @@
 
     setTimeout(() => {
         // Вызываем уведомление типа 'info', чтобы увидеть эффект вырезания
-        showNotificationUntilClick('AdBlocker v0.2\n@xrsrvd', 'info');
+        showNotificationUntilClick('AdBlocker v0.82\n@xrsrvd', 'info');
     }, 1000);
 
     setTimeout(scanForAds, 500);
