@@ -12,36 +12,65 @@
             minWidth: '180px',
             maxWidth: '90%',
             padding: '12px 20px',
-            color: 'transparent',
+            // color: 'white', // Цвет текста будет переопределен для эффекта
             borderRadius: '15px',
             boxShadow: '0 3px 8px rgba(0, 0, 0, 0.25)',
             zIndex: '10001',
             fontFamily: 'Roboto, Arial, sans-serif',
             fontSize: '15px',
+            fontWeight: 'bold', // Сделаем текст жирнее для лучшей видимости эффекта
             lineHeight: '1.4',
             textAlign: 'center',
             whiteSpace: 'pre-wrap',
             opacity: '0',
             transition: 'opacity 0.4s ease-in-out, bottom 0.4s ease-in-out',
             cursor: 'default',
-            border: '1px solid black', // Added black border
-            WebkitTextFillColor: 'transparent', // Make text transparent
-            mixBlendMode: 'screen' // Let background show through text
+            border: '1px solid black' // Added black border
         };
         
         let backgroundColor = '#333'; 
-        // Set color to transparent regardless of notification type
-        let color = 'transparent';
+        let textColor = 'white'; // Стандартный цвет текста
+        let textBackgroundColor = 'white'; // Фон для "вырезанного" текста
+
         switch (type) {
-            case 'success': backgroundColor = '#28a745'; break;
-            case 'info':    backgroundColor = '#2eaf17'; break;
-            case 'warning': backgroundColor = '#ffc107'; break;
-            case 'error':   backgroundColor = '#dc3545'; break;
+            case 'success': 
+                backgroundColor = '#28a745'; 
+                break;
+            case 'info':    
+                backgroundColor = '#2eaf17'; // Зеленый фон контейнера
+                // Для эффекта вырезания:
+                textColor = 'transparent'; // Текст делаем прозрачным
+                textBackgroundColor = 'white'; // Фон, который будет виден "сквозь" текст
+                break;
+            case 'warning': 
+                backgroundColor = '#ffc107'; 
+                textColor = '#333'; // Для предупреждения оставим стандартный темный текст
+                break;
+            case 'error':   
+                backgroundColor = '#dc3545'; 
+                break;
         }
         
-        baseStyles.backgroundColor = backgroundColor; 
-        baseStyles.color = color;
+        // Применяем базовые стили
         Object.assign(notification.style, baseStyles);
+        
+        // Устанавливаем фон контейнера
+        notification.style.backgroundColor = backgroundColor; 
+        
+        // Устанавливаем цвет текста (или прозрачность для эффекта)
+        notification.style.color = textColor;
+
+        // Если тип 'info', применяем эффект вырезания
+        if (type === 'info') {
+            notification.style.backgroundImage = `linear-gradient(${textBackgroundColor}, ${textBackgroundColor})`; // Устанавливаем фон для области текста
+            notification.style.webkitBackgroundClip = 'text'; // Для совместимости с WebKit (Chrome, Safari)
+            notification.style.backgroundClip = 'text'; // Стандартное свойство
+        } else if (type === 'warning') {
+             // Убедимся, что для warning нет эффекта вырезания
+             notification.style.backgroundImage = 'none';
+             notification.style.webkitBackgroundClip = 'unset';
+             notification.style.backgroundClip = 'unset';
+        }
         
         let isDismissing = false;
         const dismissNotification = () => {
@@ -67,21 +96,17 @@
         }, 50);
     }
 
+    // --- Остальной код без изменений ---
+
     let processedElements = new WeakSet();
     
     function scanForAds() {
-        // Специфичные селекторы для рекламы
         const selectors = [
-            // Google Ads
             '[id*="google_ads"]',
             '[id*="div-gpt-ad"]',
             '[data-google-query-id]',
-            
-            // Toast реклама
             'div[id="charting-ad"]',
             'div[class*="toast-kckar"]',
-            
-            // Кнопки закрытия рекламы
             'button[title="Закрыть рекламу"]',
             'div[class*="closeButtonWrapper"]'
         ];
@@ -90,8 +115,6 @@
             document.querySelectorAll(selector).forEach(element => {
                 if (processedElements.has(element)) return;
                 processedElements.add(element);
-                
-                // Находим контейнер рекламы
                 const container = findAdContainer(element);
                 if (container) container.style.display = 'none';
             });
@@ -99,26 +122,17 @@
     }
     
     function findAdContainer(element) {
-        // Проверяем сам элемент
         if (isAdContainer(element)) return element;
-        
-        // Проверяем родителей (максимум 4 уровня)
         let current = element.parentElement;
         let level = 0;
-        
         while (current && level < 4) {
             if (isAdContainer(current)) return current;
-            
-            // Проверяем стили
             if (current.getAttribute('style')?.includes('height-padded')) {
                 return current;
             }
-            
             current = current.parentElement;
             level++;
         }
-        
-        // Резервный вариант: сам элемент
         return element;
     }
     
@@ -126,22 +140,18 @@
         const id = element.id || '';
         const className = element.className || '';
         const dataName = element.getAttribute('data-name') || '';
-        
-        // Специфичные признаки рекламы
         return /google_ads|div-gpt-ad|charting-ad/.test(id) || 
                /toastGroup.*charting-ad|toast-kckar/.test(className) ||
                /toast-group.*charting-ad/.test(dataName);
     }
     
-    // Показываем уведомление с задержкой 1 секунду
     setTimeout(() => {
-        showNotificationUntilClick('AdBlocker v0.3\n@xrsrvd', 'info');
+        // Вызываем уведомление типа 'info', чтобы увидеть эффект
+        showNotificationUntilClick('AdBlocker v0.2\n@xrsrvd', 'info'); 
     }, 1000);
     
-    // Начальное сканирование
     setTimeout(scanForAds, 500);
     
-    // Наблюдатель за DOM
     const observer = new MutationObserver(() => requestAnimationFrame(scanForAds));
     observer.observe(document.body, {
         childList: true,
@@ -150,6 +160,5 @@
         characterData: false
     });
     
-    // Периодическое сканирование
     setInterval(scanForAds, 1000);
 })();
