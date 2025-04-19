@@ -1,7 +1,7 @@
 (function() {
     function showNotificationUntilClick(message, type = 'info') {
         if (!document.body) return;
-        
+
         const notification = document.createElement('div');
         notification.textContent = message.replace(/\\n/g, '\n');
         const baseStyles = {
@@ -12,13 +12,13 @@
             minWidth: '180px',
             maxWidth: '90%',
             padding: '12px 20px',
-            // color: 'white', // Цвет текста будет переопределен для эффекта
+            // Цвет текста будет управляться маской или установлен как прозрачный
             borderRadius: '15px',
             boxShadow: '0 3px 8px rgba(0, 0, 0, 0.25)',
             zIndex: '10001',
             fontFamily: 'Roboto, Arial, sans-serif',
             fontSize: '15px',
-            fontWeight: 'bold', // Сделаем текст жирнее для лучшей видимости эффекта
+            fontWeight: 'bold', // Жирный шрифт для лучшей видимости выреза
             lineHeight: '1.4',
             textAlign: 'center',
             whiteSpace: 'pre-wrap',
@@ -27,51 +27,71 @@
             cursor: 'default',
             border: '1px solid black' // Added black border
         };
-        
-        let backgroundColor = '#333'; 
+
+        let backgroundColor = '#333';
         let textColor = 'white'; // Стандартный цвет текста
-        let textBackgroundColor = 'white'; // Фон для "вырезанного" текста
 
         switch (type) {
-            case 'success': 
-                backgroundColor = '#28a745'; 
+            case 'success':
+                backgroundColor = '#28a745';
                 break;
-            case 'info':    
+            case 'info':
                 backgroundColor = '#2eaf17'; // Зеленый фон контейнера
-                // Для эффекта вырезания:
-                textColor = 'transparent'; // Текст делаем прозрачным
-                textBackgroundColor = 'white'; // Фон, который будет виден "сквозь" текст
+                // Для эффекта вырезания цвет текста не важен, т.к. он будет маской
                 break;
-            case 'warning': 
-                backgroundColor = '#ffc107'; 
-                textColor = '#333'; // Для предупреждения оставим стандартный темный текст
+            case 'warning':
+                backgroundColor = '#ffc107';
+                textColor = '#333';
                 break;
-            case 'error':   
-                backgroundColor = '#dc3545'; 
+            case 'error':
+                backgroundColor = '#dc3545';
                 break;
         }
-        
+
         // Применяем базовые стили
         Object.assign(notification.style, baseStyles);
-        
-        // Устанавливаем фон контейнера
-        notification.style.backgroundColor = backgroundColor; 
-        
-        // Устанавливаем цвет текста (или прозрачность для эффекта)
-        notification.style.color = textColor;
 
-        // Если тип 'info', применяем эффект вырезания
+        // Устанавливаем фон контейнера
+        notification.style.backgroundColor = backgroundColor;
+
+        // Сбрасываем свойства, которые могут помешать маске
+        notification.style.backgroundImage = 'none';
+        notification.style.webkitBackgroundClip = 'unset';
+        notification.style.backgroundClip = 'unset';
+        notification.style.webkitMaskImage = 'none';
+        notification.style.maskImage = 'none';
+        notification.style.webkitMaskClip = 'unset';
+        notification.style.maskClip = 'unset';
+        notification.style.webkitMaskComposite = 'source-over'; // Reset composite
+        notification.style.maskComposite = 'add'; // Reset composite
+
+
         if (type === 'info') {
-            notification.style.backgroundImage = `linear-gradient(${textBackgroundColor}, ${textBackgroundColor})`; // Устанавливаем фон для области текста
-            notification.style.webkitBackgroundClip = 'text'; // Для совместимости с WebKit (Chrome, Safari)
-            notification.style.backgroundClip = 'text'; // Стандартное свойство
-        } else if (type === 'warning') {
-             // Убедимся, что для warning нет эффекта вырезания
-             notification.style.backgroundImage = 'none';
-             notification.style.webkitBackgroundClip = 'unset';
-             notification.style.backgroundClip = 'unset';
+            // --- Применяем CSS Маску для эффекта вырезания ---
+
+            // 1. Создаем маску: черный фон (непрозрачный)
+            notification.style.webkitMaskImage = 'linear-gradient(black, black)';
+            notification.style.maskImage = 'linear-gradient(black, black)';
+
+            // 2. Обрезаем маску по форме текста
+            // Текст становится "прозрачной" областью в маске
+            notification.style.webkitMaskClip = 'text';
+            notification.style.maskClip = 'text';
+
+            // 3. Композиция маски: вычитаем текстовую область из основной маски
+            // Это делает область текста полностью прозрачной в элементе
+            notification.style.webkitMaskComposite = 'destination-out'; // Для WebKit (Chrome, Safari)
+            notification.style.maskComposite = 'exclude'; // Стандартное свойство
+
+            // 4. Делаем сам текст невидимым (прозрачным),
+            // чтобы он не перекрывал "дырку", созданную маской.
+            notification.style.color = 'transparent';
+
+        } else {
+            // Для других типов уведомлений используем стандартный цвет текста
+            notification.style.color = textColor;
         }
-        
+
         let isDismissing = false;
         const dismissNotification = () => {
             if (isDismissing) return;
@@ -86,7 +106,7 @@
                 }
             }, 400);
         };
-        
+
         document.body.appendChild(notification);
         setTimeout(() => {
             notification.style.opacity = '1';
@@ -96,10 +116,10 @@
         }, 50);
     }
 
-    // --- Остальной код без изменений ---
+    // --- Остальной код AdBlocker без изменений ---
 
     let processedElements = new WeakSet();
-    
+
     function scanForAds() {
         const selectors = [
             '[id*="google_ads"]',
@@ -110,7 +130,7 @@
             'button[title="Закрыть рекламу"]',
             'div[class*="closeButtonWrapper"]'
         ];
-        
+
         selectors.forEach(selector => {
             document.querySelectorAll(selector).forEach(element => {
                 if (processedElements.has(element)) return;
@@ -120,7 +140,7 @@
             });
         });
     }
-    
+
     function findAdContainer(element) {
         if (isAdContainer(element)) return element;
         let current = element.parentElement;
@@ -135,23 +155,23 @@
         }
         return element;
     }
-    
+
     function isAdContainer(element) {
         const id = element.id || '';
         const className = element.className || '';
         const dataName = element.getAttribute('data-name') || '';
-        return /google_ads|div-gpt-ad|charting-ad/.test(id) || 
+        return /google_ads|div-gpt-ad|charting-ad/.test(id) ||
                /toastGroup.*charting-ad|toast-kckar/.test(className) ||
                /toast-group.*charting-ad/.test(dataName);
     }
-    
+
     setTimeout(() => {
-        // Вызываем уведомление типа 'info', чтобы увидеть эффект
-        showNotificationUntilClick('AdBlocker v0.2\n@xrsrvd', 'info'); 
+        // Вызываем уведомление типа 'info', чтобы увидеть эффект вырезания
+        showNotificationUntilClick('AdBlocker v0.2\n@xrsrvd', 'info');
     }, 1000);
-    
+
     setTimeout(scanForAds, 500);
-    
+
     const observer = new MutationObserver(() => requestAnimationFrame(scanForAds));
     observer.observe(document.body, {
         childList: true,
@@ -159,6 +179,6 @@
         attributes: false,
         characterData: false
     });
-    
+
     setInterval(scanForAds, 1000);
 })();
