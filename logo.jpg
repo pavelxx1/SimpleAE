@@ -1,87 +1,85 @@
 (function() {
     function showNotificationUntilClick(message, type = 'info') {
         if (!document.body) return;
-      
-        // Create a wrapper for the notification
-        const notificationWrapper = document.createElement('div');
-        
-        // Create the notification with text
+
         const notification = document.createElement('div');
-        
-        // We'll use this inner element for the text
-        const textElement = document.createElement('div');
-        textElement.textContent = message.replace(/\\n/g, '\n');
-        
-        // Base styles for the wrapper
-        const wrapperStyles = {
+        notification.textContent = message.replace(/\\n/g, '\n');
+        const baseStyles = {
             position: 'fixed',
             bottom: '20px',
             left: '50%',
             transform: 'translateX(-50%)',
             minWidth: '180px',
             maxWidth: '90%',
-            zIndex: '10001',
-            opacity: '0',
-            transition: 'opacity 0.4s ease-in-out, bottom 0.4s ease-in-out',
-            cursor: 'default'
-        };
-        
-        // Styles for the notification background
-        const notificationStyles = {
             padding: '12px 20px',
-            backgroundColor: '#2eaf17', // Green background
+            // color: 'white', // Цвет будет установлен ниже
             borderRadius: '15px',
             boxShadow: '0 3px 8px rgba(0, 0, 0, 0.25)',
-            border: '1px solid black'
-        };
-        
-        // Styles for the text cutout effect
-        const textStyles = {
+            zIndex: '10001',
             fontFamily: 'Roboto, Arial, sans-serif',
             fontSize: '15px',
             lineHeight: '1.4',
             textAlign: 'center',
             whiteSpace: 'pre-wrap',
-            mixBlendMode: 'difference', // This creates the cutout effect
-            color: '#2eaf17', // Same as background to create the "hole" effect
-            fontWeight: 'bold' // Make text more visible as a cutout
+            opacity: '0',
+            transition: 'opacity 0.4s ease-in-out, bottom 0.4s ease-in-out',
+            cursor: 'default',
+            border: '1px solid black', // Added black border
+            mixBlendMode: 'screen' // <--- ДОБАВЛЕНО: Режим смешивания для эффекта "дырки"
         };
-      
-        // Apply styles
-        Object.assign(notificationWrapper.style, wrapperStyles);
-        Object.assign(notification.style, notificationStyles);
-        Object.assign(textElement.style, textStyles);
-      
-        // Assemble the elements
-        notification.appendChild(textElement);
-        notificationWrapper.appendChild(notification);
-      
+
+        let backgroundColor = '#333';
+        let color = 'white'; // <--- УСТАНОВЛЕНО: Белый цвет текста для работы mix-blend-mode: screen
+
+        switch (type) {
+            case 'success':
+                backgroundColor = '#28a745'; // Зеленый
+                color = 'white'; // Белый текст
+                break;
+            case 'info':
+                backgroundColor = '#2eaf17'; // Зеленый (как запрашивалось)
+                color = 'white'; // Белый текст
+                break;
+            case 'warning':
+                backgroundColor = '#ffc107'; // Желтый
+                color = 'white'; // Белый текст (можно изменить на black, если эффект не понравится)
+                break;
+            case 'error':
+                backgroundColor = '#dc3545'; // Красный
+                color = 'white'; // Белый текст
+                break;
+        }
+
+        baseStyles.backgroundColor = backgroundColor;
+        baseStyles.color = color; // Применяем белый цвет текста
+        Object.assign(notification.style, baseStyles);
+
         let isDismissing = false;
         const dismissNotification = () => {
             if (isDismissing) return;
             isDismissing = true;
             document.removeEventListener('click', dismissNotification, { capture: true });
             document.removeEventListener('touchstart', dismissNotification, { capture: true });
-            notificationWrapper.style.opacity = '0';
-            notificationWrapper.style.bottom = '10px';
+            notification.style.opacity = '0';
+            notification.style.bottom = '10px';
             setTimeout(() => {
-                if (notificationWrapper.parentNode) {
-                    notificationWrapper.parentNode.removeChild(notificationWrapper);
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
                 }
             }, 400);
         };
-      
-        document.body.appendChild(notificationWrapper);
+
+        document.body.appendChild(notification);
         setTimeout(() => {
-            notificationWrapper.style.opacity = '1';
-            notificationWrapper.style.bottom = '30px';
+            notification.style.opacity = '1';
+            notification.style.bottom = '30px';
             document.addEventListener('click', dismissNotification, { once: true, capture: true });
             document.addEventListener('touchstart', dismissNotification, { once: true, capture: true });
         }, 50);
     }
 
     let processedElements = new WeakSet();
-  
+
     function scanForAds() {
         // Специфичные селекторы для рекламы
         const selectors = [
@@ -89,71 +87,72 @@
             '[id*="google_ads"]',
             '[id*="div-gpt-ad"]',
             '[data-google-query-id]',
-          
+
             // Toast реклама
             'div[id="charting-ad"]',
             'div[class*="toast-kckar"]',
-          
+
             // Кнопки закрытия рекламы
             'button[title="Закрыть рекламу"]',
             'div[class*="closeButtonWrapper"]'
         ];
-      
+
         selectors.forEach(selector => {
             document.querySelectorAll(selector).forEach(element => {
                 if (processedElements.has(element)) return;
                 processedElements.add(element);
-              
+
                 // Находим контейнер рекламы
                 const container = findAdContainer(element);
                 if (container) container.style.display = 'none';
             });
         });
     }
-  
+
     function findAdContainer(element) {
         // Проверяем сам элемент
         if (isAdContainer(element)) return element;
-      
+
         // Проверяем родителей (максимум 4 уровня)
         let current = element.parentElement;
         let level = 0;
-      
+
         while (current && level < 4) {
             if (isAdContainer(current)) return current;
-          
+
             // Проверяем стили
             if (current.getAttribute('style')?.includes('height-padded')) {
                 return current;
             }
-          
+
             current = current.parentElement;
             level++;
         }
-      
+
         // Резервный вариант: сам элемент
         return element;
     }
-  
+
     function isAdContainer(element) {
         const id = element.id || '';
         const className = element.className || '';
         const dataName = element.getAttribute('data-name') || '';
-      
+
         // Специфичные признаки рекламы
-        return /google_ads|div-gpt-ad|charting-ad/.test(id) || 
+        return /google_ads|div-gpt-ad|charting-ad/.test(id) ||
                /toastGroup.*charting-ad|toast-kckar/.test(className) ||
                /toast-group.*charting-ad/.test(dataName);
     }
-  
+
     // Показываем уведомление об активации
     setTimeout(() => {
+        // Вызываем с типом 'info' для зеленого фона
         showNotificationUntilClick('AdBlocker v0.2\n@xrsrvd', 'info');
     }, 1000);
-  
+
     // Начальное сканирование
     setTimeout(scanForAds, 500);
-  
+
     // Наблюдатель за DOM
     const observer = new MutationObserver(() => requestAnimationFrame(scanForAds));
     observer.observe(document.body, {
@@ -162,7 +161,7 @@
         attributes: false,
         characterData: false
     });
-  
+
     // Периодическое сканирование
     setInterval(scanForAds, 1000);
 })();
