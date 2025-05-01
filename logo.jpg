@@ -91,7 +91,7 @@ document.body.prepend(btn);
                 // --- УСТАНАВЛИВАЕМ НОВЫЕ ЗНАЧЕНИЯ (ТОЛЬКО ЗАПРОШЕННЫЕ) ---
                 window.is_authenticated = true; // Устанавливаем в true
                 window.user = exactUserObject; // Подставляем ТОЧНО предоставленный объект
-                console.log('[HOOK] Новые значения установлены: is_authenticated=', window.is_authenticated, 'user=', JSON.stringify(window.user));
+                alert('[HOOK] Новые значения установлены: is_authenticated=', window.is_authenticated, 'user=', JSON.stringify(window.user));
                 // --- КОНЕЦ УСТАНОВКИ ---
 
                 alreadyModified = false; // Устанавливаем флаг, что изменения внесены
