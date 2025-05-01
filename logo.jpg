@@ -3,13 +3,13 @@
 
 (function() {
     var checkInterval = 1; // Интервал проверки 1 мс
-    var maxWaitTime = 5000; // Максимальное время ожидания 5 секунд
+    var maxWaitTime = 8000; // Максимальное время ожидания 5 секунд
     var intervalId;
     var timeoutId;
     var alreadyModified = false; // Флаг, чтобы изменить только один раз
 
-    // Данные пользователя, которые нужно подставить
-    var newUserObject = {
+    // Данные пользователя, которые нужно подставить (ТОЧНО как вы предоставили)
+    var exactUserObject = {
         "id": 105143458,
         "username": "wawovif147",
         "has_active_email": true,
@@ -67,39 +67,7 @@
         "force_to_complete_data": false,
         "force_to_upgrade": false,
         "is_support_available": false,
-        "disallow_adding_to_private_chats": false,
-        // --- ДОБАВЛЕННЫЕ/ИЗМЕНЕННЫЕ КЛЮЧЕВЫЕ ФЛАГИ ДЛЯ "ПРЕМИУМ" ---
-        "is_pro": true, // Устанавливаем флаг Pro
-        "has_active_paid_plan": true, // Указываем, что есть активный платный план
-        "has_ever_subscribed": true, // Указываем, что когда-либо подписывался
-        "has_ever_had_paid_plan": true, // Указываем, что когда-либо был платный план
-        "has_pro_features": true, // Включаем Pro фичи
-        // Можно раскомментировать и установить true для более высоких планов, если нужно
-        // "has_pro_plus_features": true,
-        // "has_premium_features": true,
-        // "has_ultimate_features": true,
-        "plan_name": "Premium", // Устанавливаем имя плана (например, Premium)
-        "plan_type": "paid", // Тип плана - платный
-        "plan_featureset": "premium", // Набор фич (например, premium)
-        "plan_is_second_based_intervals": true, // !!! РАЗРЕШАЕМ СЕКУНДНЫЕ ИНТЕРВАЛЫ !!!
-        "plan_is_custom_intervals": true, // РАЗРЕШАЕМ КАСТОМНЫЕ ИНТЕРВАЛЫ
-        "plan_is_ad_free": true, // Убираем рекламу
-        "access": { // Дублируем настройки доступа
-            "type": "premium", // Тип доступа (например, premium)
-            "expires": Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60), // Ставим срок действия на год вперед
-            "days_left": 365,
-            "is_trial": false,
-            "is_paid": true, // Указываем, что доступ оплачен
-            "is_second_based_intervals": true, // !!! РАЗРЕШАЕМ СЕКУНДНЫЕ ИНТЕРВАЛЫ !!!
-            "is_custom_intervals": true, // РАЗРЕШАЕМ КАСТОМНЫЕ ИНТЕРВАЛЫ
-            "is_ad_free": true, // Убираем рекламу
-            // Можно добавить другие флаги из access премиум-пользователя, если необходимо
-             "max_charts": 8, // Пример для Premium
-             "max_indicators": 25, // Пример для Premium
-             "max_active_alerts": 400, // Пример для Premium
-             "max_devices": 5 // Пример для Premium
-        }
-        // --- КОНЕЦ ДОБАВЛЕННЫХ/ИЗМЕНЕННЫХ ФЛАГОВ ---
+        "disallow_adding_to_private_chats": false
     };
 
     function modifyVarsAndLog() {
@@ -107,9 +75,9 @@
         if (!alreadyModified && typeof window.user !== 'undefined' && typeof window.is_authenticated !== 'undefined') {
             console.log('[HOOK] Переменные user/is_authenticated найдены. Исходные значения: is_authenticated=', window.is_authenticated, 'user=', JSON.stringify(window.user));
             try {
-                // --- УСТАНАВЛИВАЕМ НОВЫЕ ЗНАЧЕНИЯ ---
+                // --- УСТАНАВЛИВАЕМ НОВЫЕ ЗНАЧЕНИЯ (ТОЛЬКО ЗАПРОШЕННЫЕ) ---
                 window.is_authenticated = true; // Устанавливаем в true
-                window.user = newUserObject; // Подставляем подготовленный объект
+                window.user = exactUserObject; // Подставляем ТОЧНО предоставленный объект
                 console.log('[HOOK] Новые значения установлены: is_authenticated=', window.is_authenticated, 'user=', JSON.stringify(window.user));
                 // --- КОНЕЦ УСТАНОВКИ ---
 
