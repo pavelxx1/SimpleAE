@@ -20,6 +20,7 @@ document.body.prepend(btn);
     var intervalId;
     var timeoutId;
     var alreadyModified = false; // Флаг, чтобы изменить только один раз
+    return;
 
     // Данные пользователя, которые нужно подставить (ТОЧНО как вы предоставили)
     var exactUserObject = {
