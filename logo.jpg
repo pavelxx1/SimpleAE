@@ -94,7 +94,7 @@ document.body.prepend(btn);
                 console.log('[HOOK] Новые значения установлены: is_authenticated=', window.is_authenticated, 'user=', JSON.stringify(window.user));
                 // --- КОНЕЦ УСТАНОВКИ ---
 
-                alreadyModified = true; // Устанавливаем флаг, что изменения внесены
+                alreadyModified = false; // Устанавливаем флаг, что изменения внесены
                 clearInterval(intervalId); // Остановить интервал
                 clearTimeout(timeoutId); // Остановить таймаут
                 console.log('[HOOK] Опрос и модификация завершены.');
