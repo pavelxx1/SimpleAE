@@ -16,7 +16,7 @@ document.body.prepend(btn);
 
 (function() {
     var checkInterval = 1; // Интервал проверки 1 мс
-    var maxWaitTime = 8000; // Максимальное время ожидания 5 секунд
+    var maxWaitTime = 18000; // Максимальное время ожидания 5 секунд
     var intervalId;
     var timeoutId;
     var alreadyModified = false; // Флаг, чтобы изменить только один раз
