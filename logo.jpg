@@ -2,47 +2,529 @@
 
 
 (function() {
-    var checkInterval = 5; // Проверять каждые 10 мс
-    var maxWaitTime = 7000; // Максимальное время ожидания 5 секунд
+    var checkInterval = 1; // Проверять каждые 10 мс (можно сделать меньше, например 5)
+    var maxWaitTime = 5000; // Максимальное время ожидания 5 секунд
     var intervalId;
     var timeoutId;
+    var alreadyModified = false; // Флаг, чтобы изменить только один раз
 
-    function modifyVars() {
-        if (typeof window.user !== 'undefined' && typeof window.is_authenticated !== 'undefined') {
-            alert('Переменные найдены. Изменяем...');
+    function modifyVarsAndLog() {
+        // Проверяем, существуют ли переменные И не были ли они уже изменены
+        if (!alreadyModified && typeof window.user !== 'undefined' && typeof window.is_authenticated !== 'undefined') {
+            console.log('[HOOK] Переменные user/is_authenticated найдены. Исходные значения: is_authenticated=', window.is_authenticated, 'user=', JSON.stringify(window.user));
             try {
                 // --- ВАШИ ИЗМЕНЕНИЯ ЗДЕСЬ ---
-                window.is_authenticated = false; // Пример: установить в false
+                window.is_authenticated = true; // Установите нужное значение
                 window.user = {
-                    // Замените на нужную структуру объекта user
-                    // Например, можно попробовать оставить его пустым или null
-                    // или скопировать структуру из лога премиум-пользователя,
-                    // но изменить ключевые поля (id, username и т.д.)
-                    id: 12345, // Пример
-                    username: 'free_user_hacked', // Пример
-                    // ... другие поля, если нужно ...
-                    is_pro: false // Убедитесь, что флаги соответствуют бесплатному статусу
+                    // --- СКОПИРУЙТЕ СТРУКТУРУ ИЗ ЛОГА ПРЕМИУМ-ПОЛЬЗОВАТЕЛЯ ---
+                    // --- И ЗАМЕНИТЕ ЗНАЧЕНИЯ НА ТЕ, ЧТО СООТВЕТСТВУЮТ ВАШЕМУ АККАУНТУ ---
+                    // --- ИЛИ ПОПРОБУЙТЕ ПОДСТАВИТЬ НУЖНЫЕ ФЛАГИ ---
+                    // Пример (НУЖНО АДАПТИРОВАТЬ под реальную структуру из лога prem_user.log):
+                    "id": 1234567, // ID вашего пользователя
+                    "username": "your_free_username", // Ваш логин
+                    "email": "your_email@example.com",
+                    "first_name": "...",
+                    "last_name": "...",
+                    "phone_verified": true, // или false
+                    "is_pro": true, // <--- Ключевой флаг? Попробуйте true
+                    "pro_plan": "pro", // <--- Или этот? Попробуйте "pro", "proplus", "premium"
+                    "pro_trial": false,
+                    "pro_trial_days_left": 0,
+                    "pro_grace_period_days_left": 0,
+                    "pro_plan_hint": null,
+                    "pro_badge": true, // <--- Или этот?
+                    "private_account": false,
+                    "country_code": "UA", // Ваш код страны
+                    "profile_picture_url": "...", // URL вашего аватара
+                    "session_hash": "...", // Хэш сессии (важно!)
+                    "auth_token": "...", // Токен аутентификации (важно!)
+                    "tv_auth_token": "...", // Еще один токен (важно!)
+                    "billing_cycle_hint": null,
+                    "billing_provider_hint": null,
+                    "billing_status_hint": null,
+                    "billing_info_url": null,
+                    "billing_cancel_url": null,
+                    "billing_payment_method_hint": null,
+                    "billing_next_charge_hint": null,
+                    "billing_trial_end_hint": null,
+                    "billing_trial_available": false,
+                    "social_signin_provider": null,
+                    "settings": { /* ... */ },
+                    "permissions": { /* ... возможно, здесь тоже есть флаги? ... */ },
+                    "unread_notifications_count": 0,
+                    "following_count": 0,
+                    "followers_count": 0,
+                    "subscribers_count": 0,
+                    "is_moderator": false,
+                    "is_broker": false,
+                    "is_vendor": false,
+                    "is_data_vendor": false,
+                    "is_whitelisted_vendor": false,
+                    "is_script_vendor": false,
+                    "is_email_confirmed": true,
+                    "is_phone_confirmed": true, // или false
+                    "is_verified_developer": false,
+                    "is_eligible_for_pro_trial": false,
+                    "is_eligible_for_premium_trial": false,
+                    "is_eligible_for_ultimate_trial": false,
+                    "is_eligible_for_essential_trial": false,
+                    "is_eligible_for_plus_trial": false,
+                    "has_payment_method": false,
+                    "has_active_paid_plan": true, // <--- Попробуйте true
+                    "has_active_trial": false,
+                    "has_ever_subscribed": true, // <--- Попробуйте true
+                    "has_ever_trialed": false,
+                    "has_ever_had_paid_plan": true, // <--- Попробуйте true
+                    "has_ever_had_trial": false,
+                    "has_pro_features": true, // <--- Попробуйте true
+                    "has_pro_plus_features": false, // Установите в true, если хотите Pro+
+                    "has_premium_features": false, // Установите в true, если хотите Premium
+                    "has_trial_features": false,
+                    "has_essential_features": false,
+                    "has_plus_features": false,
+                    "has_ultimate_features": false,
+                    "plan_name": "Pro", // <--- Попробуйте "Pro", "Pro+", "Premium"
+                    "plan_type": "paid", // <--- Попробуйте "paid"
+                    "plan_featureset": "pro", // <--- Попробуйте "pro", "proplus", "premium"
+                    "plan_period": "month", // или "year"
+                    "plan_expires": 1746000000, // Пример timestamp в будущем
+                    "plan_started": 1714500000, // Пример timestamp в прошлом
+                    "plan_is_trial": false,
+                    "plan_is_cancellable": true,
+                    "plan_is_refundable": false,
+                    "plan_is_recurring": true,
+                    "plan_is_gift": false,
+                    "plan_is_promocode": false,
+                    "plan_is_partner": false,
+                    "plan_is_internal": false,
+                    "plan_is_group": false,
+                    "plan_is_education": false,
+                    "plan_is_blackfriday": false,
+                    "plan_is_cm_pro": false,
+                    "plan_is_community_pro": false,
+                    "plan_is_data_bundle": false,
+                    "plan_is_server_side_alert": false,
+                    "plan_is_indicator_on_indicator": false,
+                    "plan_is_second_based_intervals": true, // <--- !!! ВОТ ОНО !!! Установите в true
+                    "plan_is_custom_intervals": true, // <--- И это тоже
+                    "plan_is_chart_export": true,
+                    "plan_is_bar_replay": true,
+                    "plan_is_volume_profile": true,
+                    "plan_is_multiple_charts": true,
+                    "plan_is_intraday_renko": true,
+                    "plan_is_intraday_kagi": true,
+                    "plan_is_intraday_linebreak": true,
+                    "plan_is_intraday_pnf": true,
+                    "plan_is_publish_ideas": true,
+                    "plan_is_publish_scripts": true,
+                    "plan_is_ad_free": true, // <--- Важно
+                    "plan_is_customer_support": true,
+                    "plan_max_charts": 4, // Установите желаемое число (согласно плану)
+                    "plan_max_indicators": 5, // Установите желаемое число
+                    "plan_max_active_alerts": 20, // Установите желаемое число
+                    "plan_max_watchlists": 0, // 0 для неограниченно? Проверьте премиум лог
+                    "plan_max_watchlist_symbols": 0,
+                    "plan_max_devices": 2, // Установите желаемое число
+                    "plan_max_layouts": 5, // Установите желаемое число
+                    "plan_max_indicator_templates": 0,
+                    "plan_max_drawing_templates": 0,
+                    "plan_max_study_templates": 0,
+                    "plan_max_chart_templates": 0,
+                    "plan_max_alert_templates": 0,
+                    "plan_max_watchlist_templates": 0,
+                    "plan_max_screener_templates": 0,
+                    "plan_max_fundamental_templates": 0,
+                    "plan_max_economic_templates": 0,
+                    "plan_max_news_templates": 0,
+                    "plan_max_calendar_templates": 0,
+                    "plan_max_hotlist_templates": 0,
+                    "plan_max_ideas_templates": 0,
+                    "plan_max_scripts_templates": 0,
+                    "plan_max_chats_templates": 0,
+                    "plan_max_notifications_templates": 0,
+                    "plan_max_public_library_templates": 0,
+                    "plan_max_private_library_templates": 0,
+                    "plan_max_invite_only_scripts": 0,
+                    "plan_max_invite_only_scripts_invitations": 0,
+                    "plan_max_invite_only_scripts_subscribers": 0,
+                    "plan_max_invite_only_scripts_versions": 0,
+                    "plan_max_invite_only_scripts_updates": 0,
+                    "plan_max_invite_only_scripts_description_length": 0,
+                    "plan_max_invite_only_scripts_source_code_length": 0,
+                    "plan_max_invite_only_scripts_screenshots": 0,
+                    "plan_max_invite_only_scripts_tags": 0,
+                    "plan_max_invite_only_scripts_categories": 0,
+                    "plan_max_invite_only_scripts_visibility": 0,
+                    "plan_max_invite_only_scripts_access_type": 0,
+                    "plan_max_invite_only_scripts_access_list_size": 0,
+                    "plan_max_invite_only_scripts_access_list_updates": 0,
+                    "plan_max_invite_only_scripts_access_list_visibility": 0,
+                    "plan_max_invite_only_scripts_access_list_sharing": 0,
+                    "plan_max_invite_only_scripts_access_list_comments": 0,
+                    "plan_max_invite_only_scripts_access_list_likes": 0,
+                    "plan_max_invite_only_scripts_access_list_views": 0,
+                    "plan_max_invite_only_scripts_access_list_reports": 0,
+                    "plan_max_invite_only_scripts_access_list_moderation": 0,
+                    "plan_max_invite_only_scripts_access_list_invitations": 0,
+                    "plan_max_invite_only_scripts_access_list_subscribers": 0,
+                    "plan_max_invite_only_scripts_access_list_versions": 0,
+                    "plan_max_invite_only_scripts_access_list_updates": 0,
+                    "plan_max_invite_only_scripts_access_list_description_length": 0,
+                    "plan_max_invite_only_scripts_access_list_source_code_length": 0,
+                    "plan_max_invite_only_scripts_access_list_screenshots": 0,
+                    "plan_max_invite_only_scripts_access_list_tags": 0,
+                    "plan_max_invite_only_scripts_access_list_categories": 0,
+                    "plan_max_invite_only_scripts_access_list_visibility_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_type_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_size_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_updates_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_visibility_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_sharing_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_comments_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_likes_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_views_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_reports_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_moderation_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_invitations_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_subscribers_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_versions_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_updates_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_description_length_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_source_code_length_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_screenshots_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_tags_options": 0,
+                    "plan_max_invite_only_scripts_access_list_access_list_categories_options": 0,
+                    "plan_max_invite_only_scripts_access_list_visibility_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_type_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_size_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_updates_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_visibility_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_sharing_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_comments_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_likes_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_views_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_reports_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_moderation_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_invitations_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_subscribers_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_versions_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_updates_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_description_length_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_source_code_length_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_screenshots_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_tags_options_values": [],
+                    "plan_max_invite_only_scripts_access_list_access_list_categories_options_values": [],
+                    "gdpr_accept_time": 1600000000, // Пример
+                    "tos_accept_time": 1600000000, // Пример
+                    "data_privacy_accept_time": 1600000000, // Пример
+                    "joined": 1600000000, // Пример
+                    "last_seen": 1714500000, // Пример
+                    "timezone": "Europe/Kiev",
+                    "signup_country": "UA",
+                    "access": {
+                        "type": "pro", // <--- Попробуйте "pro", "proplus", "premium"
+                        "expires": 1746000000, // Тот же timestamp
+                        "days_left": 90, // Пример
+                        "grace_period_days_left": 0,
+                        "is_trial": false,
+                        "is_paid": true, // <--- Попробуйте true
+                        "is_gift": false,
+                        "is_promocode": false,
+                        "is_partner": false,
+                        "is_internal": false,
+                        "is_group": false,
+                        "is_education": false,
+                        "is_blackfriday": false,
+                        "is_cm_pro": false,
+                        "is_community_pro": false,
+                        "is_data_bundle": false,
+                        "is_server_side_alert": false,
+                        "is_indicator_on_indicator": false,
+                        "is_second_based_intervals": true, // <--- !!! ВОТ ОНО !!!
+                        "is_custom_intervals": true, // <--- И это
+                        "is_chart_export": true,
+                        "is_bar_replay": true,
+                        "is_volume_profile": true,
+                        "is_multiple_charts": true,
+                        "is_intraday_renko": true,
+                        "is_intraday_kagi": true,
+                        "is_intraday_linebreak": true,
+                        "is_intraday_pnf": true,
+                        "is_publish_ideas": true,
+                        "is_publish_scripts": true,
+                        "is_ad_free": true,
+                        "is_customer_support": true,
+                        "max_charts": 4,
+                        "max_indicators": 5,
+                        "max_active_alerts": 20,
+                        "max_watchlists": 0,
+                        "max_watchlist_symbols": 0,
+                        "max_devices": 2,
+                        "max_layouts": 5,
+                        "max_indicator_templates": 0,
+                        "max_drawing_templates": 0,
+                        "max_study_templates": 0,
+                        "max_chart_templates": 0,
+                        "max_alert_templates": 0,
+                        "max_watchlist_templates": 0,
+                        "max_screener_templates": 0,
+                        "max_fundamental_templates": 0,
+                        "max_economic_templates": 0,
+                        "max_news_templates": 0,
+                        "max_calendar_templates": 0,
+                        "max_hotlist_templates": 0,
+                        "max_ideas_templates": 0,
+                        "max_scripts_templates": 0,
+                        "max_chats_templates": 0,
+                        "max_notifications_templates": 0,
+                        "max_public_library_templates": 0,
+                        "max_private_library_templates": 0,
+                        "max_invite_only_scripts": 0,
+                        "max_invite_only_scripts_invitations": 0,
+                        "max_invite_only_scripts_subscribers": 0,
+                        "max_invite_only_scripts_versions": 0,
+                        "max_invite_only_scripts_updates": 0,
+                        "max_invite_only_scripts_description_length": 0,
+                        "max_invite_only_scripts_source_code_length": 0,
+                        "max_invite_only_scripts_screenshots": 0,
+                        "max_invite_only_scripts_tags": 0,
+                        "max_invite_only_scripts_categories": 0,
+                        "max_invite_only_scripts_visibility": 0,
+                        "max_invite_only_scripts_access_type": 0,
+                        "max_invite_only_scripts_access_list_size": 0,
+                        "max_invite_only_scripts_access_list_updates": 0,
+                        "max_invite_only_scripts_access_list_visibility": 0,
+                        "max_invite_only_scripts_access_list_sharing": 0,
+                        "max_invite_only_scripts_access_list_comments": 0,
+                        "max_invite_only_scripts_access_list_likes": 0,
+                        "max_invite_only_scripts_access_list_views": 0,
+                        "max_invite_only_scripts_access_list_reports": 0,
+                        "max_invite_only_scripts_access_list_moderation": 0,
+                        "max_invite_only_scripts_access_list_invitations": 0,
+                        "max_invite_only_scripts_access_list_subscribers": 0,
+                        "max_invite_only_scripts_access_list_versions": 0,
+                        "max_invite_only_scripts_access_list_updates": 0,
+                        "max_invite_only_scripts_access_list_description_length": 0,
+                        "max_invite_only_scripts_access_list_source_code_length": 0,
+                        "max_invite_only_scripts_access_list_screenshots": 0,
+                        "max_invite_only_scripts_access_list_tags": 0,
+                        "max_invite_only_scripts_access_list_categories": 0,
+                        "max_invite_only_scripts_access_list_visibility_options": 0,
+                        "max_invite_only_scripts_access_list_access_type_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_size_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_updates_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_visibility_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_sharing_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_comments_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_likes_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_views_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_reports_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_moderation_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_invitations_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_subscribers_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_versions_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_updates_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_description_length_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_source_code_length_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_screenshots_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_tags_options": 0,
+                        "max_invite_only_scripts_access_list_access_list_categories_options": 0,
+                        "max_invite_only_scripts_access_list_visibility_options_values": [],
+                        "max_invite_only_scripts_access_list_access_type_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_size_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_updates_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_visibility_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_sharing_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_comments_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_likes_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_views_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_reports_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_moderation_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_invitations_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_subscribers_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_versions_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_updates_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_description_length_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_source_code_length_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_screenshots_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_tags_options_values": [],
+                        "max_invite_only_scripts_access_list_access_list_categories_options_values": []
+                    },
+                    "billing_account_id": "...",
+                    "billing_account_type": "...",
+                    "billing_customer_id": "...",
+                    "billing_subscription_id": "...",
+                    "billing_plan_id": "...",
+                    "billing_product_id": "...",
+                    "billing_payment_processor": "...",
+                    "billing_payment_method": "...",
+                    "billing_card_brand": "...",
+                    "billing_card_last4": "...",
+                    "billing_card_expiry_month": 0,
+                    "billing_card_expiry_year": 0,
+                    "billing_address_line1": "...",
+                    "billing_address_line2": "...",
+                    "billing_city": "...",
+                    "billing_state": "...",
+                    "billing_zip": "...",
+                    "billing_country": "...",
+                    "billing_company_name": "...",
+                    "billing_tax_id": "...",
+                    "billing_vat_id": "...",
+                    "billing_phone": "...",
+                    "billing_email": "...",
+                    "billing_currency": "USD",
+                    "billing_amount": 0,
+                    "billing_interval": "month",
+                    "billing_interval_count": 1,
+                    "billing_created": 1714500000,
+                    "billing_current_period_start": 1714500000,
+                    "billing_current_period_end": 1746000000,
+                    "billing_cancel_at_period_end": false,
+                    "billing_canceled_at": null,
+                    "billing_ended_at": null,
+                    "billing_trial_start": null,
+                    "billing_trial_end": null,
+                    "billing_discount": null,
+                    "billing_coupon": null,
+                    "billing_tax_percent": null,
+                    "billing_tax_ids": [],
+                    "billing_invoice_settings": { /* ... */ },
+                    "billing_default_payment_method": "...",
+                    "billing_default_source": "...",
+                    "billing_default_invoice_settings": { /* ... */ },
+                    "billing_default_tax_ids": [],
+                    "billing_default_tax_rates": [],
+                    "billing_default_discount": null,
+                    "billing_default_coupon": null,
+                    "billing_default_address": { /* ... */ },
+                    "billing_default_shipping": null,
+                    "billing_default_phone": "...",
+                    "billing_default_email": "...",
+                    "billing_default_name": "...",
+                    "billing_default_company_name": "...",
+                    "billing_default_tax_id": "...",
+                    "billing_default_vat_id": "...",
+                    "billing_default_currency": "USD",
+                    "billing_default_description": "...",
+                    "billing_default_metadata": { /* ... */ },
+                    "billing_default_statement_descriptor": "...",
+                    "billing_default_statement_descriptor_suffix": "...",
+                    "billing_default_preferred_locales": [],
+                    "billing_default_test_clock": null,
+                    "billing_default_livemode": true,
+                    "billing_default_object": "customer",
+                    "billing_default_id": "...",
+                    "billing_default_created": 1600000000,
+                    "billing_default_delinquent": false,
+                    "billing_default_subscriptions": { /* ... */ },
+                    "billing_default_invoices": { /* ... */ },
+                    "billing_default_sources": { /* ... */ },
+                    "billing_default_tax_exempt": "none",
+                    "billing_default_balance": 0,
+                    "billing_default_account_balance": 0,
+                    "billing_default_shipping_address": null,
+                    "billing_default_shipping_name": null,
+                    "billing_default_shipping_phone": null,
+                    "billing_default_shipping_tracking_number": null,
+                    "billing_default_shipping_carrier": null,
+                    "billing_default_shipping_address_collection": null,
+                    "billing_default_shipping_tax_id_collection": null,
+                    "billing_default_shipping_phone_number_collection": null,
+                    "billing_default_shipping_email_collection": null,
+                    "billing_default_shipping_name_collection": null,
+                    "billing_default_shipping_company_name_collection": null,
+                    "billing_default_shipping_tax_id_type_collection": null,
+                    "billing_default_shipping_tax_id_value_collection": null,
+                    "billing_default_shipping_vat_id_collection": null,
+                    "billing_default_shipping_country_collection": null,
+                    "billing_default_shipping_state_collection": null,
+                    "billing_default_shipping_city_collection": null,
+                    "billing_default_shipping_line1_collection": null,
+                    "billing_default_shipping_line2_collection": null,
+                    "billing_default_shipping_postal_code_collection": null,
+                    "billing_default_shipping_preferred_locales_collection": null,
+                    "billing_default_shipping_test_clock_collection": null,
+                    "billing_default_shipping_livemode_collection": null,
+                    "billing_default_shipping_object_collection": null,
+                    "billing_default_shipping_id_collection": null,
+                    "billing_default_shipping_created_collection": null,
+                    "billing_default_shipping_delinquent_collection": null,
+                    "billing_default_shipping_subscriptions_collection": null,
+                    "billing_default_shipping_invoices_collection": null,
+                    "billing_default_shipping_sources_collection": null,
+                    "billing_default_shipping_tax_exempt_collection": null,
+                    "billing_default_shipping_balance_collection": null,
+                    "billing_default_shipping_account_balance_collection": null,
+                    "billing_default_shipping_shipping_address_collection": null,
+                    "billing_default_shipping_shipping_name_collection": null,
+                    "billing_default_shipping_shipping_phone_collection": null,
+                    "billing_default_shipping_shipping_tracking_number_collection": null,
+                    "billing_default_shipping_shipping_carrier_collection": null,
+                    "billing_default_shipping_shipping_address_collection_collection": null,
+                    "billing_default_shipping_shipping_tax_id_collection_collection": null,
+                    "billing_default_shipping_shipping_phone_number_collection_collection": null,
+                    "billing_default_shipping_shipping_email_collection_collection": null,
+                    "billing_default_shipping_shipping_name_collection_collection": null,
+                    "billing_default_shipping_shipping_company_name_collection_collection": null,
+                    "billing_default_shipping_shipping_tax_id_type_collection_collection": null,
+                    "billing_default_shipping_shipping_tax_id_value_collection_collection": null,
+                    "billing_default_shipping_shipping_vat_id_collection_collection": null,
+                    "billing_default_shipping_shipping_country_collection_collection": null,
+                    "billing_default_shipping_shipping_state_collection_collection": null,
+                    "billing_default_shipping_shipping_city_collection_collection": null,
+                    "billing_default_shipping_shipping_line1_collection_collection": null,
+                    "billing_default_shipping_shipping_line2_collection_collection": null,
+                    "billing_default_shipping_shipping_postal_code_collection_collection": null,
+                    "billing_default_shipping_shipping_preferred_locales_collection_collection": null,
+                    "billing_default_shipping_shipping_test_clock_collection_collection": null,
+                    "billing_default_shipping_shipping_livemode_collection_collection": null,
+                    "billing_default_shipping_shipping_object_collection_collection": null,
+                    "billing_default_shipping_shipping_id_collection_collection": null,
+                    "billing_default_shipping_shipping_created_collection_collection": null,
+                    "billing_default_shipping_shipping_delinquent_collection_collection": null,
+                    "billing_default_shipping_shipping_subscriptions_collection_collection": null,
+                    "billing_default_shipping_shipping_invoices_collection_collection": null,
+                    "billing_default_shipping_shipping_sources_collection_collection": null,
+                    "billing_default_shipping_shipping_tax_exempt_collection_collection": null,
+                    "billing_default_shipping_shipping_balance_collection_collection": null,
+                    "billing_default_shipping_shipping_account_balance_collection_collection": null,
+                    "billing_default_shipping_shipping_shipping_address_collection_collection": null,
+                    "billing_default_shipping_shipping_shipping_name_collection_collection": null,
+                    "billing_default_shipping_shipping_shipping_phone_collection_collection": null,
+                    "billing_default_shipping_shipping_shipping_tracking_number_collection_collection": null,
+                    "billing_default_shipping_shipping_shipping_carrier_collection_collection": null
                 };
-                alert('Новые значения: is_authenticated=', window.is_authenticated, 'user=', JSON.stringify(window.user));
+                console.log('[HOOK] Новые значения установлены: is_authenticated=', window.is_authenticated, 'user=', JSON.stringify(window.user));
                 // --- КОНЕЦ ВАШИХ ИЗМЕНЕНИЙ ---
 
+                alreadyModified = true; // Устанавливаем флаг, что изменения внесены
                 clearInterval(intervalId); // Остановить интервал
                 clearTimeout(timeoutId); // Остановить таймаут
+                console.log('[HOOK] Опрос и модификация завершены.');
+
             } catch (e) {
-                alert('Ошибка при изменении переменных:', e);
+                console.error('[HOOK] Ошибка при изменении переменных:', e);
                 clearInterval(intervalId);
                 clearTimeout(timeoutId);
             }
+        } else if (alreadyModified) {
+             // Если уже изменено, просто останавливаем таймеры, если они еще работают
+             clearInterval(intervalId);
+             clearTimeout(timeoutId);
         } else {
-            // console.log('Переменные user/is_authenticated еще не определены...');
+            // console.log('[HOOK] Переменные user/is_authenticated еще не определены или уже изменены...');
         }
     }
 
-    intervalId = setInterval(modifyVars, checkInterval);
+    console.log('[HOOK] Запуск опроса для user/is_authenticated...');
+    intervalId = setInterval(modifyVarsAndLog, checkInterval);
 
     timeoutId = setTimeout(function() {
-        clearInterval(intervalId); // Остановить интервал по таймауту
-        alert('Таймаут ожидания переменных user/is_authenticated истек.');
+        if (!alreadyModified) { // Только если еще не модифицировали
+           clearInterval(intervalId); // Остановить интервал по таймауту
+           console.warn('[HOOK] Таймаут ожидания переменных user/is_authenticated истек.');
+        }
     }, maxWaitTime);
 
 })();
